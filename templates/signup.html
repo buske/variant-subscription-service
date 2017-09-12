@@ -10,6 +10,27 @@
         <div class="col-md-4">
             <form method="post">
                 {{ form.hidden_tag() }}
+                {{ wtf.form_field(form.chr_pos_ref_alt) }}
+                <div class="control-group">
+                    <div class="controls col-md-2">
+                        {{ wtf.form_field(form.unknown_to_benign) }}
+                        {{ wtf.form_field(form.benign_to_benign) }}
+                        {{ wtf.form_field(form.vus_to_benign) }}
+                        {{ wtf.form_field(form.path_to_benign) }}
+                    </div>
+                    <div class="controls col-md-2">
+                        {{ wtf.form_field(form.unknown_to_vus) }}
+                        {{ wtf.form_field(form.benign_to_vus) }}
+                        {{ wtf.form_field(form.vus_to_vus, disabled_="disabled") }}
+                        {{ wtf.form_field(form.path_to_vus) }}
+                    </div>
+                    <div class="controls col-md-2">
+                        {{ wtf.form_field(form.unknown_to_path) }}
+                        {{ wtf.form_field(form.benign_to_path) }}
+                        {{ wtf.form_field(form.vus_to_path) }}
+                        {{ wtf.form_field(form.path_to_path, disabled_="disabled") }}
+                    </div>
+                </div>
 {#                {{ wtf.form_field(form.email)}}#}
 {#                <div class="row">#}
 {#                    {{ wtf.form_field(form.chromosome, form_type='horizontal', horizontal_columns=('lg', 1, 1)) }}#}
@@ -21,7 +42,7 @@
 {#                    {{ wtf.form_field(form.eula) }}#}
 {#                </div>#}
 {#                {{ wtf.form_field(form.submit) }}#}
-                {{ wtf.quick_form(form) }}
+{#                {{ wtf.quick_form(form) }}#}
             </form>
         </div>
     </div>
