@@ -6,7 +6,6 @@
 # http://flask.pocoo.org/docs/blueprints/
 
 from flask import Blueprint, render_template, flash, redirect, url_for
-from flask_nav import Nav
 from flask_nav.elements import Navbar, View, Subgroup, Link, Text, Separator
 from markupsafe import escape
 import logging
@@ -16,10 +15,10 @@ logger = logging.getLogger("frontend")
 logger.setLevel(logging.DEBUG)
 
 from .forms import *
+from .nav import nav
 
 frontend = Blueprint('frontend', __name__)
 
-nav = Nav()
 nav.register_element('frontend_top', Navbar(
     View('VSS', '.index'),
     View('Home', '.index'),
