@@ -30,7 +30,9 @@ nav.register_element('frontend_top', Navbar(
 
 @frontend.route('/')
 def index():
-    return render_template('index.html')
+    import random
+    num_variants = random.randint(1000, 5000)  # get_number_of_variants()
+    return render_template('index.html', num_variants=num_variants)
 
 
 @frontend.route('/my_variants/')
