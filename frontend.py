@@ -40,9 +40,18 @@ def about():
     return render_template('about.html')
 
 
-@frontend.route('/my_variants/')
-def my_variants():
-    return render_template('my_variants.html')
+@frontend.route('/account/')
+def account():
+    form = PreferencesForm()
+
+    logger.debug('Validated: %s', form.validate_on_submit())
+    logger.debug('Errors: %s', form.errors)
+    if form.validate_on_submit():
+        flash('Hello, {}. You have successfully signed up'
+              .format(escape(form.eula.data)))
+        return redirect(url_for('.index'))
+
+    return render_template('account.html', form=form)
 
 
 @frontend.route('/signup/', methods=('GET', 'POST'))
@@ -66,6 +75,6 @@ def login_form():
     if form.validate_on_submit():
         flash('Hello, {}. You have successfully signed up'
               .format(escape(form.email.data)))
-        return redirect(url_for('.my_variants'))
+        return redirect(url_for('.account'))
 
     return render_template('login.html', form=form)

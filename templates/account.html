@@ -1,0 +1,45 @@
+{% import "bootstrap/wtf.html" as wtf %}
+
+{%- extends "base.html" %}
+
+{% block content %}
+  <div class="container">
+      <h1>Preferences</h1>
+
+        <table>
+            <tr>
+                <th>From v   To -></th>
+                <th>Benign</th>
+                <th>VUS</th>
+                <th>Pathogenic</th>
+            </tr>
+            <tr>
+                <th>Unknown</th>
+                <td>{{ form.unknown_to_benign(checked=True) }}</td>
+                <td>{{ form.unknown_to_vus(checked=True) }}</td>
+                <td>{{ form.unknown_to_path(checked=True) }}</td>
+            </tr>
+            <tr>
+                <th>Benign</th>
+                <td>{{ form.benign_to_benign(disabled=True) }}</td>
+                <td>{{ form.benign_to_vus(checked=True) }}</td>
+                <td>{{ form.benign_to_path(checked=True) }}</td>
+            </tr>
+            <tr>
+                <th>VUS</th>
+                <td>{{ form.vus_to_benign(checked=True) }}</td>
+                <td>{{ form.vus_to_vus(disabled=True) }}</td>
+                <td>{{ form.vus_to_path(checked=True) }}</td>
+            </tr>
+            <tr>
+                <th>Pathogenic</th>
+                <td>{{ form.path_to_vus(checked=True) }}</td>
+                <td>{{ form.path_to_benign(checked=True) }}</td>
+                <td>{{ form.path_to_path(disabled=True) }}</td>
+            </tr>
+        </table><br/>
+        {{ wtf.form_field(form.delete) }}
+        <br/><br/>
+        {{ wtf.form_field(form.submit) }}
+   </div>
+{%- endblock %}
