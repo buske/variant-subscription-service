@@ -1,5 +1,10 @@
 from flask import Flask
 from flask_bootstrap import Bootstrap
+from flask_wtf.csrf import CSRFProtect
+
+from .frontend import frontend
+from .nav import nav
+
 
 def create_app():
     app = Flask('vss')
@@ -8,5 +13,10 @@ def create_app():
     })
 
     Bootstrap(app)
+    CSRFProtect(app)
+    app.config['SECRET_KEY'] = 'verysecret'
+
+    app.register_blueprint(frontend)
+    nav.init_app(app)
 
     return app

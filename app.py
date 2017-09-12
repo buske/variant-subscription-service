@@ -9,8 +9,8 @@ app = create_app()
 mongo = PyMongo(app)
 
 @app.route('/')
-def hello_world():
-    return render_template('home.html')
+def index():
+    return render_template('base.html')
 
 @app.route('/v/<variant>')
 def variant_detail(variant):

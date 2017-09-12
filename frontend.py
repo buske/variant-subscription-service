@@ -24,7 +24,8 @@ nav.register_element('frontend_top', Navbar(
     View('Home', '.index'),
     View('New variant', '.signup_form'),
     View('Login', '.login_form'),
-    View('Debug-Info', 'debug.debug_root'), ))
+    # View('Debug-Info', 'debug.debug_root'),
+    ))
 
 
 # Our index-page just shows a quick explanation. Check out the template
@@ -40,9 +41,9 @@ def signup_form():
 
     logger.debug('Validated: %s', form.validate())
     logger.debug('Errors: %s', form.errors)
-    print form.eula
-    print form.eula.data
-    print form.eula.raw_data
+    print(form.eula)
+    print(form.eula.data)
+    print(form.eula.raw_data)
     # if form.validate_on_submit():
     #     flash('Hello, {}. You have successfully signed up'
     #           .format(escape(form.eula.data)))
