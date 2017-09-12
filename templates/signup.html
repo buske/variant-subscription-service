@@ -12,11 +12,10 @@
 {#            <!--{% if request.args.get('legacy') -%}-->#}
 {#            <!--{{wtf.quick_form(form)}}-->#}
 {#            <!--{%- else -%}-->#}
-{#            <!--<form method="post">-->#}
-{#                {{ form.hidden_tag() }}#}
-            {{ form.csrf_token }}
-                {{ form|render_form() }}
-{#            <!--</form>-->#}
+            <form method="post">
+                {{ form.hidden_tag() }}
+                {{ wtf.quick_form(form) }}
+            </form>
 {#            <!--{%- endif %}-->#}
         </div>
     </div>
