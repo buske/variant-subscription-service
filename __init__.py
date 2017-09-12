@@ -2,7 +2,11 @@ from flask import Flask
 from flask_bootstrap import Bootstrap
 
 def create_app():
-  app = Flask(__name__)
-  Bootstrap(app)
+    app = Flask('vss')
+    app.config.from_object({
+      'MONGO_DBNAME': 'vss',
+    })
 
-  return app
+    Bootstrap(app)
+
+    return app

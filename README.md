@@ -1,4 +1,4 @@
-# variant-subscription-service
+# Variant Subscription Service (VSS)
 Subscribe to important updates on genomic variants of interest, such as changes in ClinVar classification
 
 ## Setup
@@ -6,7 +6,7 @@ Subscribe to important updates on genomic variants of interest, such as changes 
 ### Prerequisites
 
 * Python 3.3+
-* Mongodb
+* mongodb
 
 ### Installation
 
@@ -17,4 +17,18 @@ cd variant-subscription-service
 mkvirtualenv -p python3 .virtualenv
 source .virtualenv/bin/activate
 pip install -r requirements.txt
+```
+
+## Run server
+
+### Start mongodb
+
+```
+mongod --dbpath /path/to/db
+```
+
+### Start flask
+```
+export FLASK_APP=app.py
+flask run
 ```
