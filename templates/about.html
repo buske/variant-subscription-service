@@ -1,0 +1,21 @@
+{%- extends "base.html" %}
+
+{% import "bootstrap/utils.html" as utils %}
+
+{% block content %}
+  <div class="container">
+    <h1>About and FAQ</h1>
+    <div class="col-lg-12">
+      <h2>About</h2>
+        <h4>How does it work?</h4>
+        <p>You sign up, you get emails</p>
+        <h4>Where is the data coming from?</h4>
+        <p>Clinvar and the <a href="https://github.com/macarthur-lab/clinvar">MacArthur lab parser</a></p>
+        <h4>How often will it update?</h4>
+        <p>Whenever it updates (seems to be every few months)</p>
+      <h2>Privacy</h2>
+        <h4>What will you do with my email?</h4>
+        <p>Nothing! Except use it to email you when updates are available</p>
+    </div>
+   </div>
+{%- endblock %}

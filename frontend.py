@@ -22,9 +22,9 @@ frontend = Blueprint('frontend', __name__)
 nav.register_element('frontend_top', Navbar(
     View('VSS', '.index'),
     View('Home', '.index'),
+    View('About', '.about'),
     View('New variant', '.signup_form'),
     View('Login', '.login_form'),
-    # View('Debug-Info', 'debug.debug_root'),
     ))
 
 
@@ -33,6 +33,11 @@ def index():
     import random
     num_variants = random.randint(1000, 5000)  # get_number_of_variants()
     return render_template('index.html', num_variants=num_variants)
+
+
+@frontend.route('/about/')
+def about():
+    return render_template('about.html')
 
 
 @frontend.route('/my_variants/')
