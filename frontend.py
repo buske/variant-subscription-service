@@ -28,8 +28,6 @@ nav.register_element('frontend_top', Navbar(
     ))
 
 
-# Our index-page just shows a quick explanation. Check out the template
-# "templates/index.html" documentation for more details.
 @frontend.route('/')
 def index():
     return render_template('index.html')
@@ -39,15 +37,15 @@ def index():
 def signup_form():
     form = SignupForm()
 
-    logger.debug('Validated: %s', form.validate())
+    logger.debug('Validated: %s', form.validate_on_submit())
     logger.debug('Errors: %s', form.errors)
-    print(form.eula)
-    print(form.eula.data)
-    print(form.eula.raw_data)
-    # if form.validate_on_submit():
-    #     flash('Hello, {}. You have successfully signed up'
-    #           .format(escape(form.eula.data)))
-    #     return redirect(url_for('.index'))
+    # print(form.eula)
+    # print(form.eula.data)
+    # print(form.eula.raw_data)
+    if form.validate_on_submit():
+        flash('Hello, {}. You have successfully signed up'
+              .format(escape(form.eula.data)))
+        return redirect(url_for('.index'))
 
     return render_template('signup.html', form=form)
 
