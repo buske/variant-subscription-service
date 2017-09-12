@@ -14,7 +14,7 @@ logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s")
 logger = logging.getLogger("frontend")
 logger.setLevel(logging.DEBUG)
 
-from .forms import SignupForm
+from .forms import *
 from .nav import nav
 
 frontend = Blueprint('frontend', __name__)
@@ -31,6 +31,11 @@ nav.register_element('frontend_top', Navbar(
 @frontend.route('/')
 def index():
     return render_template('index.html')
+
+
+@frontend.route('/my_variants/')
+def my_variants():
+    return render_template('my_variants.html')
 
 
 @frontend.route('/signup/', methods=('GET', 'POST'))
@@ -52,13 +57,11 @@ def signup_form():
 
 @frontend.route('/login/', methods=('GET', 'POST'))
 def login_form():
-    form = SignupForm()
+    form = LoginForm()
 
     if form.validate_on_submit():
         flash('Hello, {}. You have successfully signed up'
-              .format(escape(form.name.data)))
-
-        # In a real application, you may wish to avoid this tedious redirect.
-        return redirect(url_for('.index'))
+              .format(escape(form.email.data)))
+        return redirect(url_for('.my_variants'))
 
     return render_template('signup.html', form=form)

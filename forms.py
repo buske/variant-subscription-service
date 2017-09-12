@@ -18,3 +18,9 @@ class SignupForm(FlaskForm):
     eula = StringField(u'I did not read the terms and conditions')
 
     submit = SubmitField(u'Signup')
+
+
+class LoginForm(FlaskForm):
+    email = StringField(u'Your email address', validators=[Email(), DataRequired()])
+
+    submit = SubmitField(u'Signup')
