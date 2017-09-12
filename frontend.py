@@ -63,4 +63,4 @@ def login_form():
               .format(escape(form.email.data)))
         return redirect(url_for('.my_variants'))
 
-    return render_template('signup.html', form=form)
+    return render_template('login.html', form=form)
