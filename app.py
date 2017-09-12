@@ -8,10 +8,6 @@ from . import create_app
 app = create_app()
 mongo = PyMongo(app)
 
-@app.route('/')
-def index():
-    return render_template('base.html')
-
 @app.route('/v/<variant>')
 def variant_detail(variant):
     variant = mongo.db.variants.find_one_or_404({'_id': variant})
