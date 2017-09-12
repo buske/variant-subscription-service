@@ -9,7 +9,7 @@ CHROMOSOMES.extend(['chr{}'.format(x) for x in CHROMOSOMES])
 
 class SignupForm(FlaskForm):
     chr_pos_ref_alt = StringField(u'Chrom-Pos-Ref-Alt', validators=[DataRequired(), Regexp('([1[0-9]|2[0-2]|\d)-\d+-[ATCG]+-[ATCG]+')])
-    email = StringField(u'Your email address', validators=[Email(), DataRequired()])
+    email = StringField(u'Email address', validators=[Email(), DataRequired()])
     # chromosome = StringField(u'Chromosome', validators=[DataRequired(), AnyOf(CHROMOSOMES)])
     # position = IntegerField(u'Position', validators=[DataRequired()])
     # reference = StringField(u'Reference allele', validators=[DataRequired()])
@@ -21,6 +21,7 @@ class SignupForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
-    email = StringField(u'Your email address', validators=[Email(), DataRequired()])
+    email = StringField(u'Email address', validators=[Email(), DataRequired()])
+    # password = PasswordField(u'Password', validators=[DataRequired()])
 
-    submit = SubmitField(u'Signup')
+    submit = SubmitField(u'Login')
