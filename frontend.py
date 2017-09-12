@@ -44,9 +44,6 @@ def signup_form():
 
     logger.debug('Validated: %s', form.validate_on_submit())
     logger.debug('Errors: %s', form.errors)
-    # print(form.eula)
-    # print(form.eula.data)
-    # print(form.eula.raw_data)
     if form.validate_on_submit():
         flash('Hello, {}. You have successfully signed up'
               .format(escape(form.eula.data)))

@@ -5,10 +5,9 @@
 
 {% block content %}
     <div class="container">
-        <div class="jumbotron">
-            <h1>Signup for our awesome service</h1>
-        </div>
-        <div class="col-md-12">
+        <h1>Please enter a variant</h1>
+        <br/>
+        <div class="col-md-4">
             <form method="post">
                 {{ form.hidden_tag() }}
 {#                {{ wtf.form_field(form.email)}}#}
@@ -26,6 +25,24 @@
             </form>
         </div>
     </div>
-    <h1>Form Errors</h1>
-    {{ form.errors }}
+
+<div id="tandc" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Terms and Conditions</h4>
+      </div>
+      <div class="modal-body">
+        <p>You agree to whatever we please.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+{#    <h1>Form Errors</h1>#}
+{#    {{ form.errors }}#}
 {%- endblock %}
