@@ -14,7 +14,7 @@ Subscribe to important updates on genomic variants of interest, such as changes 
 git clone https://github.com/buske/variant-subscription-service.git
 cd variant-subscription-service
 
-mkvirtualenv -p python3 .virtualenv
+virtualenv -p python3 .virtualenv
 source .virtualenv/bin/activate
 pip install -r requirements.txt
 ```
