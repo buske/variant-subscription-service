@@ -53,12 +53,13 @@ def account(user=None):
     logger.debug('Errors: %s', form.errors)
 
     token = request.args.get('t', '')
+    logger.debug('Token: %s', token)
     if token:
-        user = validate_and_get_token_data(token)
+        user = authenticate(token)
         if not user:
             flash('Wrong credentials. Please ensure the link is correct, or request a new token')
             redirect(url_for('.login'))
-    print(user)
+    logger.debug('User: %s', user)
 
     slack_code = request.args.get('code', '')
     if slack_code:
