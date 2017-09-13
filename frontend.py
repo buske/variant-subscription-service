@@ -26,7 +26,7 @@ nav.register_element('frontend_top', Navbar(
     View('VSS', '.index'),
     View('Home', '.index'),
     View('About', '.about'),
-    View('New variant', '.signup_form'),
+    View('Subscribe', '.subscribe_form'),
     View('Login', '.login'),
     ))
 
@@ -78,8 +78,8 @@ def account(user=None):
     return render_template('account.html', form=form, user=user)
 
 
-@frontend.route('/signup/', methods=('GET', 'POST'))
-def signup_form():
+@frontend.route('/subscribe/', methods=('GET', 'POST'))
+def subscribe_form():
     form = SignupForm()
 
     logger.debug('Validated: %s', form.validate_on_submit())
@@ -94,7 +94,7 @@ def signup_form():
             flash('Already subscribed to those variants')
         return redirect(url_for('.index'))
 
-    return render_template('signup.html', form=form)
+    return render_template('subscribe.html', form=form)
 
 
 def validate_and_get_token_data(x):
