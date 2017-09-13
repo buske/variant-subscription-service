@@ -4,6 +4,7 @@
 from ..constants import BENIGN, UNCERTAIN, UNKNOWN, PATHOGENIC
 from .mailer import build_mail, send_mail
 
+
 def render_rating(gold_stars):
     try:
         stars = int(gold_stars)
@@ -15,9 +16,6 @@ def render_rating(gold_stars):
     else:
         return '{} stars'.format(stars)
 
-class NotificationPreferences:
-    def __init__(self):
-        pass
 
 class Notifier:
     def __init__(self):

@@ -93,9 +93,22 @@ def create_user(db, email):
         'last_emailed': None,
         'is_active': True,
         'slack': None,
+        'notification_preferences': {
+            'unknown_to_benign': True,
+            'vus_to_benign': True,
+            'path_to_benign': True,
+
+            'unknown_to_vus': True,
+            'benign_to_vus': True,
+            'path_to_vus': True,
+
+            'unknown_to_path': True,
+            'benign_to_path': True,
+            'vus_to_path': True,
+        }
     })
     user_id = result.inserted_id
-    return user_id
+    return user_id, token
 
 
 def subscribe_to_variants(db, user_id, variant_ids):
@@ -119,8 +132,11 @@ You're subscribed to a total of {} variants
 
 Manage your account here: {}
 """.format(num_subscribed, total_subscribed, account_url)
+
+    logger.debug('Sending subscription email to: {}'.format(user_email))
     mail = build_mail(user_email, subject, body)
     send_mail(mail)
+    logger.info('Sent subscription email to: {}'.format(user_email))
 
 
 def find_or_create_variants(db, genome_build, variant_strings):
@@ -149,7 +165,7 @@ def subscribe(db, email, variant_strings, genome_build=DEFAULT_GENOME_BUILD):
     if user is None:
         logger.debug('User not found: {}'.format(email))
         user_id, token = create_user(db, email)
-        logger.debug('Created user: {}'.format(user))
+        logger.debug('Created user: {}'.format(user_id))
     else:
         logger.debug('Found user: {}'.format(user))
         user_id = user['_id']
