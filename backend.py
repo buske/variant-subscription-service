@@ -92,6 +92,7 @@ def create_user(db, email):
         'joined_at': datetime.utcnow(),
         'last_emailed': None,
         'is_active': True,
+        'slack': None,
     })
     user_id = result.inserted_id
     return user_id
@@ -170,8 +171,8 @@ def subscribe(db, email, variant_strings, genome_build=DEFAULT_GENOME_BUILD):
     return num_subscribed
 
 def authenticate(token):
-    db = mongo.db
     """Given a token, return user data or None if not valid"""
+    db = mongo.db
     return db.users.find_one({ 'token': token })
 
 def get_stats():
@@ -181,3 +182,8 @@ def get_stats():
     return {
         'subscribed_variants': subscribed_variants,
     }
+
+def set_user_slack_data(user, slack_data):
+    db = mongo.db
+    assert user['_id']
+    return db.users.update({ '_id': user['_id'] }, { '$set': { 'slack', slack_data } })

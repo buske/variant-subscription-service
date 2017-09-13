@@ -18,7 +18,7 @@ logger.setLevel(logging.DEBUG)
 
 from .forms import *
 from .extensions import mongo, nav
-from .backend import authenticate, get_stats, subscribe
+from .backend import authenticate, get_stats, subscribe, set_user_slack_data
 
 frontend = Blueprint('frontend', __name__)
 
@@ -63,7 +63,8 @@ def account(user=None):
             client_secret=os.environ.get('SLACK_CLIENT_SECRET', ''),
             code=slack_code
         )
-        print(auth_response['access_token'])
+        logger.debug('Slack auth response: {}'.format(auth_response))
+        set_user_slack_data(user, auth_response)
 
     return render_template('account.html', form=form, user=user)
 
