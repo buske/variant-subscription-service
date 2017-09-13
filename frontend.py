@@ -9,6 +9,8 @@ from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_nav.elements import Navbar, View, Subgroup, Link, Text, Separator
 from markupsafe import escape
 import logging
+from slackclient import SlackClient
+import os
 
 logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s")
 logger = logging.getLogger("frontend")
@@ -50,6 +52,19 @@ def account(user=None):
     logger.debug('Validated: %s', form.validate_on_submit())
     logger.debug('Errors: %s', form.errors)
 
+    slack_code = request.args.get('code', '')
+    if slack_code:
+        sc = SlackClient('')
+
+        # Request the auth tokens from Slack
+        auth_response = sc.api_call(
+            "oauth.access",
+            client_id=os.environ.get('SLACK_CLIENT_ID', ''),
+            client_secret=os.environ.get('SLACK_CLIENT_SECRET', ''),
+            code=slack_code
+        )
+        print(auth_response['access_token'])
+
     return render_template('account.html', form=form, user=user)
 
 
@@ -75,7 +90,8 @@ def signup_form():
 def validate_and_get_token_data(x):
     return {
         'email': 'a@a.com',
-        'preferences': ''
+        'preferences': '',
+        'slack': ''
     }
 
 
