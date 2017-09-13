@@ -94,3 +94,10 @@ See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation
 
             mail = build_mail(to_email, subject, body)
             send_mail(mail)
+            # sc = SlackClient(slack_token)
+            # sc.api_call(
+            #     "chat.postMessage",
+            #     channel=channels,
+            #     text=message,
+            #     parse='full'
+            # )
