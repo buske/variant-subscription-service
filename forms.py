@@ -30,6 +30,7 @@ class PreferencesForm(FlaskForm):
 
 class SignupForm(FlaskForm):
     chr_pos_ref_alt = StringField(u'Chrom-Pos-Ref-Alt', validators=[DataRequired(), Regexp('([1[0-9]|2[0-2]|\d)-\d+-[ATCG]+-[ATCG]+')])
+    tag = StringField(u'Tag this variant with a name (optional)')
     email = StringField(u'Email address', validators=[Email(), DataRequired()])
 
     # chromosome = StringField(u'Chromosome', validators=[DataRequired(), AnyOf(CHROMOSOMES)])

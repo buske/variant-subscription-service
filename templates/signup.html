@@ -11,6 +11,7 @@
             <form method="post">
                 {{ form.hidden_tag() }}
                 {{ wtf.form_field(form.chr_pos_ref_alt) }}
+                {{ wtf.form_field(form.tag)}}
                 {{ wtf.form_field(form.email)}}
 {#                <div class="row">#}
 {#                    {{ wtf.form_field(form.chromosome, form_type='horizontal', horizontal_columns=('lg', 1, 1)) }}#}
