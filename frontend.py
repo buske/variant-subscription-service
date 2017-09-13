@@ -78,10 +78,6 @@ def email_token(email):
     return True
 
 
-def send_message():
-    import requests
-    requests.post('https://hooks.slack.com/services/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', json={"text": "Hello, World!"})
-
 
 @frontend.route('/login', methods=('GET', 'POST'))
 def login():
