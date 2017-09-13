@@ -142,7 +142,6 @@ def subscribe(db, email, variant_strings, genome_build=DEFAULT_GENOME_BUILD):
         logger.debug('Created user: {}'.format(user))
     else:
         logger.debug('Found user: {}'.format(user))
-        token = reset_user_token(db, user)
         user_id = user['_id']
         try:
             token = user['token']
