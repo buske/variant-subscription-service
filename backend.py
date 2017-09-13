@@ -152,6 +152,9 @@ def find_or_create_variants(db, genome_build, variant_strings):
             logger.debug('Could not find variant: {}'.format(variant_string))
             # Create variant
             variant = build_variant_doc(genome_build, chrom, pos, ref, alt)
+            result = db.variants.insert_one(variant)
+            if result.inserted_id != variant['_id']:
+                logger.error('Error creating variant: {}'.format(variant))
             logger.debug('Created new variant doc: {}'.format(variant))
 
         variant_docs.append(variant)
