@@ -204,6 +204,7 @@ def get_stats():
     }
 
 def set_user_slack_data(user, slack_data):
+    # TODO: need to handle bad auth responses, e.g.: {'error': 'bad_redirect_uri', 'ok': False}
     db = mongo.db
     assert user['_id']
     return db.users.update({ '_id': user['_id'] }, { '$set': { 'slack': slack_data } })
