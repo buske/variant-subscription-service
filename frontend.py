@@ -40,17 +40,16 @@ def about():
     return render_template('about.html')
 
 
-@frontend.route('/account/')
-def account():
+@frontend.route('/account/<data>')
+def account(data=None):
     form = PreferencesForm()
-
+    logger.debug('Data: %s', data)
     logger.debug('Validated: %s', form.validate_on_submit())
     logger.debug('Errors: %s', form.errors)
     if form.validate_on_submit():
-
         return redirect(url_for('.index'))
 
-    return render_template('account.html', form=form)
+    return render_template('account.html', form=form, data=data)
 
 
 @frontend.route('/signup/', methods=('GET', 'POST'))
@@ -68,7 +67,10 @@ def signup_form():
 
 
 def validate_and_get_token_data(x):
-    return True
+    return {
+        'email': 'a@a.com',
+        'preferences': ''
+    }
 
 
 @frontend.route('/login', methods=('GET', 'POST'))
@@ -82,7 +84,8 @@ def login():
         if token:
             data = validate_and_get_token_data(token)
             if data:
-                return render_template('account.html')
+                logger.debug('Data: %s', data)
+                return account(data)
             else:
                 flash('Wrong credentials. Please ensure the link is correct, or request a new token')
     return render_template('login.html', form=form)

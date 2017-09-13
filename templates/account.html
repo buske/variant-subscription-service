@@ -3,42 +3,52 @@
 {%- extends "base.html" %}
 
 {% block content %}
-  <div class="container">
-      <h1>Preferences</h1>
-        <table>
-            <tr>
-                <th>From v   To -></th>
-                <th>Benign</th>
-                <th>VUS</th>
-                <th>Pathogenic</th>
-            </tr>
-            <tr>
-                <th>Unknown</th>
-                <td>{{ form.unknown_to_benign(checked=True) }}</td>
-                <td>{{ form.unknown_to_vus(checked=True) }}</td>
-                <td>{{ form.unknown_to_path(checked=True) }}</td>
-            </tr>
-            <tr>
-                <th>Benign</th>
-                <td>{{ form.benign_to_benign(disabled=True) }}</td>
-                <td>{{ form.benign_to_vus(checked=True) }}</td>
-                <td>{{ form.benign_to_path(checked=True) }}</td>
-            </tr>
-            <tr>
-                <th>VUS</th>
-                <td>{{ form.vus_to_benign(checked=True) }}</td>
-                <td>{{ form.vus_to_vus(disabled=True) }}</td>
-                <td>{{ form.vus_to_path(checked=True) }}</td>
-            </tr>
-            <tr>
-                <th>Pathogenic</th>
-                <td>{{ form.path_to_vus(checked=True) }}</td>
-                <td>{{ form.path_to_benign(checked=True) }}</td>
-                <td>{{ form.path_to_path(disabled=True) }}</td>
-            </tr>
-        </table><br/>
-        {{ wtf.form_field(form.delete) }}
-        <br/><br/>
+    <div class="container">
+        <h1>Preferences</h1>
+        <h2>Welcome, {{ data.email }}!</h2>
+        <h3>Change your notification preferences</h3>
+        By default, you will be notified for all changes to ClinVar status. <br/>
+        Check the variant transitions for you would like to be notified and click Update Preferences.<br/><br/>
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-bordered">
+                    <tr>
+                        <th>From <span class="glyphicon glyphicon-arrow-down" aria-hidden="true"></span></th>
+                        <th>To <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span></th>
+                        <th>Benign</th>
+                        <th>VUS</th>
+                        <th>Pathogenic</th>
+                    </tr>
+                    <tr>
+                        <th colspan="2">Unknown/Not in ClinVar</th>
+                        <td>{{ form.unknown_to_benign(checked=True) }}</td>
+                        <td>{{ form.unknown_to_vus(checked=True) }}</td>
+                        <td>{{ form.unknown_to_path(checked=True) }}</td>
+                    </tr>
+                    <tr>
+                        <th colspan="2">Benign</th>
+                        <td>{{ form.benign_to_benign(disabled=True) }}</td>
+                        <td>{{ form.benign_to_vus(checked=True) }}</td>
+                        <td>{{ form.benign_to_path(checked=True) }}</td>
+                    </tr>
+                    <tr>
+                        <th colspan="2">VUS</th>
+                        <td>{{ form.vus_to_benign(checked=True) }}</td>
+                        <td>{{ form.vus_to_vus(disabled=True) }}</td>
+                        <td>{{ form.vus_to_path(checked=True) }}</td>
+                    </tr>
+                    <tr>
+                        <th colspan="2">Pathogenic</th>
+                        <td>{{ form.path_to_vus(checked=True) }}</td>
+                        <td>{{ form.path_to_benign(checked=True) }}</td>
+                        <td>{{ form.path_to_path(disabled=True) }}</td>
+                    </tr>
+                </table><br/>
+            </div>
+        </div>
         {{ wtf.form_field(form.submit) }}
-   </div>
+        <br/>
+        <h3>Delete your account</h3>
+        {{ wtf.form_field(form.delete) }}
+    </div>
 {%- endblock %}
