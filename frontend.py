@@ -73,12 +73,21 @@ def validate_and_get_token_data(x):
     }
 
 
+def email_token(email):
+    return True
+
+
 @frontend.route('/login', methods=('GET', 'POST'))
 def login():
     form = LoginForm()
     if request.method == 'POST':
         if form.validate_on_submit():
-            return redirect(url_for('.login'))
+            email_status = email_token(form.email.data)
+            if email_status:
+                flash('Success! Click the link in the email sent to {}'.format(escape(form.email.data)))
+            else:
+                flash('Error sending email to {}. Please contact the sysadmin'.format(escape(form.email.data)))
+            return redirect(url_for('.index'))
     else:
         token = request.args.get('t', '')
         if token:
