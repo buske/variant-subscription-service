@@ -88,7 +88,6 @@ def account(user=None):
         success = set_preferences(user, form)
         if success:
             flash('Success! Preferences updated.')
-        return redirect(url_for('.index'))
         #     logger.debug('Slack Form: %s', form)
         #     success = set_preferences(mongo.db, form)
         #     if success:
