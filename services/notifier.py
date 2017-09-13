@@ -22,11 +22,6 @@ class Notifier:
         self.change_notifications = {}  # dict: email -> list of notifications
         self.add_notifications = {}  # dict: email -> list of notifications
 
-    # Notify if:
-    # - benign -> uncertain, conflicting, pathogenic
-    # - null, not provided, uncertain, conflicting -> benign, pathogenic
-    # - pathogenic -> uncertain, conflicting, benign
-
     def should_notify_of_clinvar_change(self, old_clinvar, new_clinvar):
         # TODO: per-user preferences
         old_category = old_clinvar['category']

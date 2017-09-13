@@ -10,6 +10,7 @@ from ..services.notifier import Notifier
 
 CLINVAR_FILE = '/Users/buske/dat/clinvar/clinvar_alleles.single.b37.tsv.gz.new'
 
+
 def merge_docs(old_doc, new_doc, notifier):
     merged_clinvar = {}
     had_clinvar_data = bool(old_doc['clinvar'])
@@ -31,7 +32,7 @@ def merge_docs(old_doc, new_doc, notifier):
     merged_doc = {
         '_id': old_doc['_id'],
         'variant': new_doc['variant'],
-        'subscribers': old_doc['subscribers'] or ['orion.buske@gmail.com'],
+        'subscribers': old_doc['subscribers'],
         'clinvar': merged_clinvar,
     }
     if had_clinvar_data:
@@ -44,10 +45,12 @@ def merge_docs(old_doc, new_doc, notifier):
 
     return
 
+
 def iter_variants(filename):
     with gzip.open(filename, 'rt') as ifp:
         for row in DictReader(ifp, dialect='excel-tab'):
             yield row
+
 
 if __name__ == '__main__':
     db = get_db()
