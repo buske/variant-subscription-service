@@ -25,8 +25,10 @@ assert DEFAULT_RANDOM_BYTES % 4 == 0
 # DEFAULT_BCRYPT_ROUNDS = 12
 VARIANT_PART_DELIMITER = '-'
 
+
 def make_variant_key(build, chrom, pos, ref, alt):
     return '-'.join([build, chrom, pos, ref, alt])
+
 
 def build_variant_doc(build, chrom, pos, ref, alt,
                       variation_id=None,
@@ -67,17 +69,20 @@ def build_variant_doc(build, chrom, pos, ref, alt,
         'subscribers': [],
     }
 
+
 def create_token():
     # standin for python secrets library which was only released in 3.6
     randbytes = os.urandom(DEFAULT_RANDOM_BYTES)
     token = str(urlsafe_b64encode(randbytes), 'utf-8')
     return token
 
+
 def reset_user_token(db, user):
     new_token = create_token()
     logging.info('Reset token for user: {}'.format(user['email']))
     db.users.update_one({ '_id': user['_id'] }, { '$set': { 'token': new_token } })
     return new_token
+
 
 def create_user(db, email):
     token = create_token()
@@ -91,12 +96,14 @@ def create_user(db, email):
     user_id = result.inserted_id
     return user_id
 
+
 def subscribe_to_variants(db, user_id, variant_ids):
     logger.debug('Subscribing to {} variants'.format(len(variant_ids)))
     result = db.variants.update_many({ '_id': { '$in': variant_ids } }, { '$addToSet': { 'subscribers': user_id } })
     num_subscribed = result.modified_count
     logger.info('Subscribed to {} new variants'.format(num_subscribed))
     return num_subscribed
+
 
 def send_subscription_email(db, user_id, user_email, token, num_subscribed, total_subscribed):
 
@@ -113,6 +120,7 @@ Manage your account here: {}
 """.format(num_subscribed, total_subscribed, account_url)
     mail = build_mail(user_email, subject, body)
     send_mail(mail)
+
 
 def find_or_create_variants(db, genome_build, variant_strings):
     variant_docs = []
@@ -132,6 +140,7 @@ def find_or_create_variants(db, genome_build, variant_strings):
         variant_docs.append(variant)
 
     return variant_docs
+
 
 def subscribe(db, email, variant_strings, genome_build=DEFAULT_GENOME_BUILD):
     user = db.users.find_one({ 'email': email })
