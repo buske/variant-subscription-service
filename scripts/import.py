@@ -1,14 +1,19 @@
 import sys
 import gzip
+import logging
 
 from csv import DictReader
 
-from . import get_db
-from ..constants import DEFAULT_GENOME_BUILD
-from ..backend import build_variant_doc
+from . import connect_db
+from ..constants import DEFAULT_GENOME_BUILD, BENIGN, UNCERTAIN, UNKNOWN, PATHOGENIC
+from ..backend import build_variant_doc, get_variant_category
 from ..services.notifier import Notifier
 
-CLINVAR_FILE = '/Users/buske/dat/clinvar/clinvar_alleles.single.b37.tsv.gz.new'
+CLINVAR_FILE = '/Users/buske/dat/clinvar/clinvar_alleles.single.b37.tsv.gz.old'
+
+logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s")
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 def merge_docs(old_doc, new_doc, notifier):
@@ -24,26 +29,31 @@ def merge_docs(old_doc, new_doc, notifier):
         # Set new annotation data
         merged_clinvar['current'] = new_data
         merged_clinvar['history'] = history
-        merged_clinvar['variation_id'] = old_doc['clinvar']['variation_id'] or new_doc['clinvar']['variation_id']
+        merged_clinvar['variation_id'] = new_doc['clinvar']['variation_id']
     else:
         # Add clinvar data to existing subscribed variant
         merged_clinvar = new_doc['clinvar']
 
-    merged_doc = {
+    return {
         '_id': old_doc['_id'],
         'variant': new_doc['variant'],
         'subscribers': old_doc['subscribers'],
         'clinvar': merged_clinvar,
     }
-    if had_clinvar_data:
-        if notifier.should_notify_of_clinvar_change(old_data, new_data):
-            notifier.notify_of_change(merged_doc, old_data, new_data)
-    else:
-        # if subscribers and should_notify_of_clinvar_add(clinvar):
-        if notifier.should_notify_of_clinvar_add(merged_clinvar['current']):
-            notifier.notify_of_add(merged_doc, merged_clinvar['current'])
 
-    return
+
+def update_variant(existing_doc, updated_doc):
+    doc_id = existing_doc['_id']
+    merged_doc = merge_docs(existing_doc, updated_doc, notifier)
+    logger.debug('Updating variant: {}'.format(existing_doc))
+    # db.variants.find_one_and_replace({ '_id': doc_id }, merged_doc)
+    return merged_doc
+
+
+def create_variant(doc):
+    result = db.variants.insert_one(doc)
+    logger.debug('Creating variant, result: {}'.format(result.inserted_id))
+    return doc
 
 
 def iter_variants(filename):
@@ -52,23 +62,37 @@ def iter_variants(filename):
             yield row
 
 
+def did_variant_category_change(old_doc, new_doc):
+    old_category = get_variant_category(old_doc)
+    new_category = get_variant_category(new_doc)
+    return old_category != new_category
+
+
 if __name__ == '__main__':
-    db = get_db()
-    notifier = Notifier()
+    db = connect_db()
+    notifier = Notifier(db)
 
     for variant in iter_variants(CLINVAR_FILE):
         doc = build_variant_doc(DEFAULT_GENOME_BUILD, **variant)
 
         doc_id = doc['_id']
-        existing_doc = db.variants.find_one(doc_id)
-        if existing_doc:
-            # Variant is already known, either:
-            # - someone subscribed before it was added to clinvar, or
-            # - it was already in clinvar, and we might have new annotations
-            merged_doc = merge_docs(existing_doc, doc, notifier)
-            db.variants.find_one_and_replace(doc_id, merged_doc)
-        else:
-            # Add clinvar annotations with empty subscriber data
-            db.variants.insert_one(doc)
+        existing_doc = db.variants.find_one({ '_id': doc_id })
+        if did_variant_category_change(existing_doc, doc):
+            logger.debug('Variant changed: {} -> {}'.format(existing_doc, doc))
 
-    notifier.send_emails()
+            if existing_doc:
+                # Variant is already known, either:
+                # - someone subscribed before it was added to clinvar, or
+                # - it was already in clinvar, and we might have new annotations
+                new_doc = update_variant(existing_doc, doc)
+            else:
+                # Add clinvar annotations with empty subscriber data
+                create_variant(doc)
+                new_doc = doc
+
+            if new_doc['subscribers']:
+                logger.debug('Notifying subscribers: {}'.format(new_doc['subscribers']))
+                notifier.notify_of_change(existing_doc, new_doc)
+
+
+    notifier.send_notifications()

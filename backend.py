@@ -7,7 +7,7 @@ from datetime import datetime
 from flask import Blueprint, g
 from base64 import urlsafe_b64encode
 
-from .constants import DEFAULT_GENOME_BUILD, BASE_URL
+from .constants import DEFAULT_GENOME_BUILD, BASE_URL, DEFAULT_NOTIFICATION_PREFERENCES, UNKNOWN
 from .extensions import mongo
 from .services.mailer import build_mail, send_mail
 from .clinvar import parse_clinvar_category
@@ -25,22 +25,15 @@ assert DEFAULT_RANDOM_BYTES % 3 == 0
 # DEFAULT_BCRYPT_ROUNDS = 12
 VARIANT_PART_DELIMITER = '-'
 
-DEFAULT_NOTIFICATION_PREFERENCES = {
-    'unknown_to_benign': True,
-    'vus_to_benign': True,
-    'path_to_benign': True,
-
-    'unknown_to_vus': True,
-    'benign_to_vus': True,
-    'path_to_vus': True,
-
-    'unknown_to_path': True,
-    'benign_to_path': True,
-    'vus_to_path': True,
-}
-
 def make_variant_key(build, chrom, pos, ref, alt):
     return '-'.join([build, chrom, pos, ref, alt])
+
+
+def get_variant_category(doc):
+    if doc:
+        return doc.get('clinvar', {}).get('current', {}).get('category', UNKNOWN)
+    else:
+        return UNKNOWN
 
 
 def build_variant_doc(build, chrom, pos, ref, alt,
@@ -65,13 +58,11 @@ def build_variant_doc(build, chrom, pos, ref, alt,
 
     if clinical_significance:
         clinvar['current'] = {
-            {
-                'category': parse_clinvar_category(clinical_significance),
-                'clinical_significance': clinical_significance,
-                'gold_stars': gold_stars,
-                'review_status': review_status,
-                'last_evaluated': last_evaluated,
-            },
+            'category': parse_clinvar_category(clinical_significance),
+            'clinical_significance': clinical_significance,
+            'gold_stars': gold_stars,
+            'review_status': review_status,
+            'last_evaluated': last_evaluated,
         }
         clinvar['history'] = []
 
@@ -122,7 +113,7 @@ def subscribe_to_variants(db, user_id, variant_ids):
 
 def send_subscription_email(db, user_id, user_email, token, num_subscribed, total_subscribed):
 
-    account_url = '{}/login?t={}'.format(BASE_URL, token)
+    account_url = '{}/account?t={}'.format(BASE_URL, token)
 
     # send welcome email
     subject = "🙌  Subscribed to {} variants".format(num_subscribed)
