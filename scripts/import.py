@@ -46,7 +46,7 @@ def update_variant(existing_doc, updated_doc):
     doc_id = existing_doc['_id']
     merged_doc = merge_docs(existing_doc, updated_doc, notifier)
     logger.debug('Updating variant: {}'.format(existing_doc))
-    # db.variants.find_one_and_replace({ '_id': doc_id }, merged_doc)
+    db.variants.find_one_and_replace({ '_id': doc_id }, merged_doc)
     return merged_doc
 
 

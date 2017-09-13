@@ -141,4 +141,6 @@ See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation
                 response = requests.post(slack_url, json={"text": text})
                 if response.status_code != 200:
                     logger.error('Slack posting failed: {}'.format(response))
+                else:
+                    logger.debug('Slack post: {}'.format(response))
 
