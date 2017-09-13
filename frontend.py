@@ -40,14 +40,15 @@ def about():
     return render_template('about.html')
 
 
-@frontend.route('/account/<data>')
+@frontend.route('/account/', methods=('GET', 'POST'))
+@frontend.route('/account/<data>', methods=('GET', 'POST'))
 def account(data=None):
     form = PreferencesForm()
+
     logger.debug('Data: %s', data)
+    logger.debug('Payload: %s', request.args)
     logger.debug('Validated: %s', form.validate_on_submit())
     logger.debug('Errors: %s', form.errors)
-    if form.validate_on_submit():
-        return redirect(url_for('.index'))
 
     return render_template('account.html', form=form, data=data)
 
@@ -75,6 +76,11 @@ def validate_and_get_token_data(x):
 
 def email_token(email):
     return True
+
+
+def send_message():
+    import requests
+    requests.post('https://hooks.slack.com/services/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', json={"text": "Hello, World!"})
 
 
 @frontend.route('/login', methods=('GET', 'POST'))

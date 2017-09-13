@@ -5,3 +5,4 @@ flask-nav==0.6
 Flask-Debug==0.4.3
 Flask-WTF==0.14.2
 sendgrid==5.2.0
+requests==2.18.4
