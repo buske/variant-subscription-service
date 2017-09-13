@@ -42,6 +42,22 @@ def about():
     return render_template('about.html')
 
 
+@frontend.route('/account/delete/', methods=('GET', 'POST'))
+def delete_account(user=None):
+    logger.debug('Deleting: %s', user)
+    # TODO: add delete function
+    flash('Your account has been deleted! Now leave.')
+    return redirect(url_for('.index'))
+
+
+@frontend.route('/account/remove_slack/', methods=('GET', 'POST'))
+def remove_slack_from_account(user=None):
+    logger.debug('Removing Slack integration from: %s', user)
+    # TODO: add remove slack functionality, and render form again
+    # return render_template('account.html', form=form, user=user, remove_slack_form=remove_slack_form, delete_form=delete_form)
+    return redirect(url_for('.index'))
+
+
 @frontend.route('/account/', methods=('GET', 'POST'))
 def account(user=None):
     token = request.args.get('t')
@@ -88,11 +104,6 @@ def account(user=None):
         success = set_preferences(user, form)
         if success:
             flash('Success! Preferences updated.')
-        #     logger.debug('Slack Form: %s', form)
-        #     success = set_preferences(mongo.db, form)
-        #     if success:
-        #         flash('Success! Preferences updated.')
-        #     return redirect(url_for('.index'))
 
     return render_template('account.html', form=form, user=user, remove_slack_form=remove_slack_form, delete_form=delete_form)
 
