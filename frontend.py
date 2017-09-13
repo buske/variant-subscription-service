@@ -78,6 +78,12 @@ def account(user=None):
         logger.debug('Slack auth response: {}'.format(auth_response))
         set_user_slack_data(user, auth_response)
 
+    if form.validate_on_submit():
+        success = set_preferences(mongo.db, form)
+        if success:
+            flash('Success! Preferences updated.')
+        return redirect(url_for('.index'))
+
     return render_template('account.html', form=form, user=user)
 
 
