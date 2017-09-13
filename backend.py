@@ -190,10 +190,12 @@ def subscribe(db, email, variant_strings, genome_build=DEFAULT_GENOME_BUILD):
 
     return num_subscribed
 
+
 def authenticate(token):
     """Given a token, return user data or None if not valid"""
     db = mongo.db
     return db.users.find_one({ 'token': token })
+
 
 def get_stats():
     db = mongo.db
@@ -203,8 +205,30 @@ def get_stats():
         'subscribed_variants': subscribed_variants,
     }
 
+
 def set_user_slack_data(user, slack_data):
     # TODO: need to handle bad auth responses, e.g.: {'error': 'bad_redirect_uri', 'ok': False}
     db = mongo.db
     assert user['_id']
-    return db.users.update({ '_id': user['_id'] }, { '$set': { 'slack': slack_data } })
+    return db.users.update_one({ '_id': user['_id'] }, { '$set': { 'slack': slack_data } })
+
+
+def set_preferences(user, form):
+    db = mongo.db
+    assert user['_id']
+    form_fields = [
+        'unknown_to_benign',
+        'vus_to_benign',
+        'path_to_benign',
+
+        'unknown_to_vus',
+        'benign_to_vus',
+        'path_to_vus',
+
+        'unknown_to_path',
+        'benign_to_path',
+        'vus_to_path',
+    ]
+    notification_preferences = dict([(field, form[field].data) for field in form_fields])
+    logger.debug('Setting notification preferences: {}'.format(notification_preferences))
+    return db.users.update_one({ '_id': user['_id'] }, { '$set': { 'notification_preferences': notification_preferences } })

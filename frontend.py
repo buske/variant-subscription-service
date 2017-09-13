@@ -18,7 +18,7 @@ logger.setLevel(logging.DEBUG)
 
 from .forms import *
 from .extensions import mongo, nav
-from .backend import authenticate, get_stats, subscribe, set_user_slack_data
+from .backend import authenticate, get_stats, subscribe, set_user_slack_data, set_preferences
 
 frontend = Blueprint('frontend', __name__)
 
@@ -43,7 +43,6 @@ def about():
 
 
 @frontend.route('/account/', methods=('GET', 'POST'))
-@frontend.route('/account/<user>', methods=('GET', 'POST'))
 def account(user=None):
     form = PreferencesForm()
     remove_slack = RemoveSlackForm()
@@ -54,16 +53,21 @@ def account(user=None):
     logger.debug('Validated: %s', form.validate_on_submit())
     logger.debug('Errors: %s', form.errors)
 
-    token = request.args.get('t', '')
-    logger.debug('Token: %s', token)
-    user = authenticate(token)
-    if not user:
-        state = request.args.get('state', '')
+    token = request.args.get('t')
+    state = request.args.get('state')
+
+    if not user and token:
+        logger.debug('Token: %s', token)
+        user = authenticate(token)
+
+    if not user and state:
         logger.debug('Got state: %s', state)
         user = authenticate(state)
+
     if not user:
         flash('Wrong credentials. Please ensure the link is correct, or request a new token')
         redirect(url_for('.login'))
+
     logger.debug('User: %s', user)
 
     slack_code = request.args.get('code', '')
@@ -81,7 +85,8 @@ def account(user=None):
         set_user_slack_data(user, auth_response)
 
     if form.validate_on_submit():
-        success = set_preferences(mongo.db, form)
+        logger.debug('Setting preferences: {}'.format(form.data))
+        success = set_preferences(user, form)
         if success:
             flash('Success! Preferences updated.')
         return redirect(url_for('.index'))
