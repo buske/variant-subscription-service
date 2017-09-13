@@ -2,76 +2,13 @@ import sys
 import gzip
 
 from csv import DictReader
-from pymongo import MongoClient
 
-from . import BENIGN, UNCERTAIN, UNKNOWN, PATHOGENIC
-from .notifier import Notifier
+from . import get_db
+from ..constants import DEFAULT_GENOME_BUILD
+from ..backend import build_variant_doc
+from ..services.notifier import Notifier
 
-MONGO_DBNAME = 'vss'
 CLINVAR_FILE = '/Users/buske/dat/clinvar/clinvar_alleles.single.b37.tsv.gz.new'
-
-GENOME_BUILD = 'b37'
-
-CLINVAR_CATEGORY_MAPPING = {
-    'pathogenic': PATHOGENIC,
-    'pathogenic/likely pathogenic': PATHOGENIC,
-    'likely pathogenic': PATHOGENIC,
-    'conflicting interpretations of pathogenicity': UNCERTAIN,
-    'not provided': UNKNOWN,
-    'uncertain significance': UNCERTAIN,
-    'likely benign': BENIGN,
-    'benign/likely benign': BENIGN,
-    'benign': BENIGN,
-}
-
-def get_key(row):
-    # Hardcode the build for now, since it isn't in the file and we're only using grch37
-    build = GENOME_BUILD
-    return '-'.join([build, row['chrom'], row['pos'], row['ref'], row['alt']])
-
-def parse_clinvar_category(significance):
-    # Normalize significance (removing additional parts, like ", association")
-    significance = significance.split(',')[0].strip().lower()
-    if significance in CLINVAR_CATEGORY_MAPPING:
-        category = CLINVAR_CATEGORY_MAPPING[significance]
-    else:
-        print('Unknown significance:', significance, file=sys.stderr)
-        category = UNKNOWN
-
-    return category
-
-def get_doc(row):
-    key = get_key(row)
-
-    variant = {
-        # Basic variant information
-        'build': GENOME_BUILD,
-        'chrom': row['chrom'],
-        'pos': row['pos'],
-        'ref': row['ref'],
-        'alt': row['alt'],
-    }
-
-    clinvar = {
-        'variation_id': row['variation_id'],
-        # Current ClinVar annotation data
-        'current': {
-            'category': parse_clinvar_category(row['clinical_significance']),
-            'clinical_significance': row['clinical_significance'],
-            'gold_stars': row['gold_stars'],
-            'review_status': row['review_status'],
-            'last_evaluated': row['last_evaluated'],
-        },
-        # Array of historical ClinVar information
-        'history': [],
-    }
-
-    return {
-        '_id': key,
-        'variant': variant,
-        'clinvar': clinvar,
-        'subscribers': [],
-    }
 
 def merge_docs(old_doc, new_doc, notifier):
     merged_clinvar = {}
@@ -113,12 +50,11 @@ def iter_variants(filename):
             yield row
 
 if __name__ == '__main__':
-    client = MongoClient('mongodb://localhost:27017')
-    db = client[MONGO_DBNAME]
+    db = get_db()
     notifier = Notifier()
 
     for variant in iter_variants(CLINVAR_FILE):
-        doc = get_doc(variant)
+        doc = build_variant_doc(DEFAULT_GENOME_BUILD, **variant)
 
         doc_id = doc['_id']
         existing_doc = db.variants.find_one(doc_id)

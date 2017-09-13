@@ -15,7 +15,8 @@ logger = logging.getLogger("frontend")
 logger.setLevel(logging.DEBUG)
 
 from .forms import *
-from .nav import nav
+from .extensions import mongo, nav
+from .backend import subscribe
 
 frontend = Blueprint('frontend', __name__)
 
@@ -60,8 +61,13 @@ def signup_form():
     logger.debug('Validated: %s', form.validate_on_submit())
     logger.debug('Errors: %s', form.errors)
     if form.validate_on_submit():
-        flash('Hello, {}. You have successfully signed up'
-              .format(escape(form.eula.data)))
+        logger.debug('Email: {}'.format(form.email.data))
+        logger.debug('Variant: {}'.format(form.chr_pos_ref_alt.data))
+        num_subscribed = subscribe(mongo.db, form.email.data, [form.chr_pos_ref_alt.data])
+        if num_subscribed > 0:
+            flash('Success! Subscribed to {} new variants'.format(num_subscribed))
+        else:
+            flash('Already subscribed to those variants')
         return redirect(url_for('.index'))
 
     return render_template('signup.html', form=form)

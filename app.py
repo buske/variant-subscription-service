@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
 from flask import render_template
-from flask_pymongo import PyMongo
 
 from . import create_app
+from .extensions import mongo
 
 app = create_app()
-mongo = PyMongo(app)
 
 @app.route('/v/<variant>')
 def variant_detail(variant):
