@@ -73,7 +73,7 @@ def account(user=None):
 
     if not user:
         flash('Wrong credentials. Please ensure the link is correct, or request a new token')
-        redirect(url_for('.login'))
+        return redirect(url_for('.login'))
 
     form = PreferencesForm(prefix="form", data=user.get('notification_preferences'))
     remove_slack_form = RemoveSlackForm(prefix="remove_slack_form")
