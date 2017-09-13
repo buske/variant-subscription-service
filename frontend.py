@@ -44,15 +44,6 @@ def about():
 
 @frontend.route('/account/', methods=('GET', 'POST'))
 def account(user=None):
-    form = PreferencesForm(prefix="form")
-    remove_slack_form = RemoveSlackForm(prefix="remove_slack_form")
-    delete_form = DeleteForm(prefix="delete_form")
-
-    logger.debug('Data: %s', user)
-    logger.debug('Payload: %s', request.args)
-    logger.debug('Validated: %s', form.validate_on_submit())
-    logger.debug('Errors: %s', form.errors)
-
     token = request.args.get('t')
     state = request.args.get('state')
 
@@ -68,6 +59,14 @@ def account(user=None):
         flash('Wrong credentials. Please ensure the link is correct, or request a new token')
         redirect(url_for('.login'))
 
+    form = PreferencesForm(prefix="form", data=user.get('notification_preferences'))
+    remove_slack_form = RemoveSlackForm(prefix="remove_slack_form")
+    delete_form = DeleteForm(prefix="delete_form")
+
+    logger.debug('Data: %s', user)
+    logger.debug('Payload: %s', request.args)
+    logger.debug('Validated: %s', form.validate_on_submit())
+    logger.debug('Errors: %s', form.errors)
     logger.debug('User: %s', user)
 
     slack_code = request.args.get('code', '')

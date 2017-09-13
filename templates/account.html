@@ -32,26 +32,26 @@
                         </tr>
                         <tr>
                             <th colspan="2">Unknown/Not in ClinVar</th>
-                            <td>{{ form.unknown_to_benign(checked=user.unknown_to_benign) }}</td>
-                            <td>{{ form.unknown_to_vus(checked=True) }}</td>
-                            <td>{{ form.unknown_to_path(checked=True) }}</td>
+                            <td>{{ form.unknown_to_benign }}</td>
+                            <td>{{ form.unknown_to_vus }}</td>
+                            <td>{{ form.unknown_to_path }}</td>
                         </tr>
                         <tr>
                             <th colspan="2">Benign</th>
                             <td>{{ form.benign_to_benign(disabled=True) }}</td>
-                            <td>{{ form.benign_to_vus(checked=True) }}</td>
-                            <td>{{ form.benign_to_path(checked=True) }}</td>
+                            <td>{{ form.benign_to_vus }}</td>
+                            <td>{{ form.benign_to_path }}</td>
                         </tr>
                         <tr>
                             <th colspan="2">VUS</th>
-                            <td>{{ form.vus_to_benign(checked=True) }}</td>
+                            <td>{{ form.vus_to_benign }}</td>
                             <td>{{ form.vus_to_vus(disabled=True) }}</td>
-                            <td>{{ form.vus_to_path(checked=True) }}</td>
+                            <td>{{ form.vus_to_path }}</td>
                         </tr>
                         <tr>
                             <th colspan="2">Pathogenic</th>
-                            <td>{{ form.path_to_vus(checked=True) }}</td>
-                            <td>{{ form.path_to_benign(checked=True) }}</td>
+                            <td>{{ form.path_to_vus }}</td>
+                            <td>{{ form.path_to_benign }}</td>
                             <td>{{ form.path_to_path(disabled=True) }}</td>
                         </tr>
                     </table><br/>

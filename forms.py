@@ -9,20 +9,20 @@ CHROMOSOMES.extend(['chr{}'.format(x) for x in CHROMOSOMES])
 
 class PreferencesForm(FlaskForm):
 
-    unknown_to_benign = BooleanField('')
-    benign_to_benign = BooleanField('')
-    vus_to_benign = BooleanField('')
-    path_to_benign = BooleanField('')
+    unknown_to_benign = BooleanField('', default=True)
+    benign_to_benign = BooleanField('', default=False)
+    vus_to_benign = BooleanField('', default=True)
+    path_to_benign = BooleanField('', default=True)
 
-    unknown_to_vus = BooleanField('')
-    benign_to_vus = BooleanField('')
-    vus_to_vus = BooleanField('')
-    path_to_vus = BooleanField('')
+    unknown_to_vus = BooleanField('', default=True)
+    benign_to_vus = BooleanField('', default=True)
+    vus_to_vus = BooleanField('', default=False)
+    path_to_vus = BooleanField('', default=True)
 
-    unknown_to_path = BooleanField('')
-    benign_to_path = BooleanField('')
-    vus_to_path = BooleanField('')
-    path_to_path = BooleanField('')
+    unknown_to_path = BooleanField('', default=True)
+    benign_to_path = BooleanField('', default=True)
+    vus_to_path = BooleanField('', default=True)
+    path_to_path = BooleanField('', default=False)
 
     submit = SubmitField(u'Update preferences')
 
