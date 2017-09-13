@@ -206,4 +206,4 @@ def get_stats():
 def set_user_slack_data(user, slack_data):
     db = mongo.db
     assert user['_id']
-    return db.users.update({ '_id': user['_id'] }, { '$set': { 'slack', slack_data } })
+    return db.users.update({ '_id': user['_id'] }, { '$set': { 'slack': slack_data } })

@@ -97,15 +97,6 @@ def subscribe_form():
     return render_template('subscribe.html', form=form)
 
 
-def validate_and_get_token_data(x):
-    return {
-        'email': 'a@a.com',
-        'preferences': '',
-        'slack': '',
-        'token': ''
-    }
-
-
 def email_token(email):
     return True
 
