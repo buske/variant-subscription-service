@@ -24,13 +24,13 @@ class PreferencesForm(FlaskForm):
     vus_to_path = BooleanField('')
     path_to_path = BooleanField('')
 
-    delete = SubmitField(u'As HRC said to DJT, delete your account')
+    delete = SubmitField(u'Delete your account')
     submit = SubmitField(u'Update preferences')
 
 
 class SignupForm(FlaskForm):
     chr_pos_ref_alt = StringField(u'Chrom-Pos-Ref-Alt', validators=[DataRequired(), Regexp('([1[0-9]|2[0-2]|\d)-\d+-[ATCG]+-[ATCG]+')])
-    tag = StringField(u'Tag this variant with a name (optional)')
+    tag = StringField(u'Tag this variant with a description (optional; please do not use patient information)')
     email = StringField(u'Email address', validators=[Email(), DataRequired()])
 
     # chromosome = StringField(u'Chromosome', validators=[DataRequired(), AnyOf(CHROMOSOMES)])
@@ -44,7 +44,6 @@ class SignupForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
-    email = StringField(u'Email address', validators=[Email(), DataRequired()])
-    # password = PasswordField(u'Password', validators=[DataRequired()])
+    email = StringField(u'Email address to send login token', validators=[Email(), DataRequired()])
 
-    submit = SubmitField(u'Login')
+    submit = SubmitField(u'Send email')
