@@ -44,9 +44,9 @@ def about():
 
 @frontend.route('/account/', methods=('GET', 'POST'))
 def account(user=None):
-    form = PreferencesForm()
-    remove_slack = RemoveSlackForm()
-    delete_form = DeleteForm()
+    form = PreferencesForm(prefix="form")
+    remove_slack_form = RemoveSlackForm(prefix="remove_slack_form")
+    delete_form = DeleteForm(prefix="delete_form")
 
     logger.debug('Data: %s', user)
     logger.debug('Payload: %s', request.args)
@@ -90,8 +90,13 @@ def account(user=None):
         if success:
             flash('Success! Preferences updated.')
         return redirect(url_for('.index'))
+        #     logger.debug('Slack Form: %s', form)
+        #     success = set_preferences(mongo.db, form)
+        #     if success:
+        #         flash('Success! Preferences updated.')
+        #     return redirect(url_for('.index'))
 
-    return render_template('account.html', form=form, user=user, remove_slack=remove_slack, delete_form=delete_form)
+    return render_template('account.html', form=form, user=user, remove_slack_form=remove_slack_form, delete_form=delete_form)
 
 
 @frontend.route('/subscribe/', methods=('GET', 'POST'))

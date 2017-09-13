@@ -8,13 +8,13 @@
         <h2>Welcome, {{ user.email }}!</h2>
         <h3>Change your notification preferences</h3>
 
-        {% if user.slack %}
-            Slack is configured! <span class="glyphicon glyphicon-check"></span><form method="post">wtf.form_field(remove_slack_form.remove_slack)</form>
+        {% if user.slack is defined %}
+            Slack is configured! <span class="glyphicon glyphicon-check"></span><form method="post">{{ form.hidden_tag() }}{{ wtf.form_field(remove_slack_form.remove_slack) }}</form>
         {% else %}
-            <a href="https://slack.com/oauth/authorize?&client_id=229170903971.240424418293&scope=incoming-webhook&state={{ user.token }}"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>
+            <a href="https://slack.com/oauth/authorize?&client_id=229170903971.240424418293&scope=incoming-webhook&state={{ user.token }}"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a><br/>
         {% endif %}
 
-        <br/><br/>
+        <br/>
         By default, you will be notified for all changes to ClinVar status. <br/>
         Check the variant transitions for you would like to be notified and click Update Preferences.<br/><br/>
         <form method="post">
@@ -61,7 +61,7 @@
             <br/>
         </form>
         <h3>Delete your account</h3>
-        <form method="post">{{ wtf.form_field(delete_form.delete) }}</form>
+        <form method="post">{{ form.hidden_tag() }}{{ wtf.form_field(delete_form.delete) }}</form>
     </div>
     {{ super() }}
 {%- endblock %}
