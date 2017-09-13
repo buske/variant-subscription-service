@@ -24,8 +24,15 @@ class PreferencesForm(FlaskForm):
     vus_to_path = BooleanField('')
     path_to_path = BooleanField('')
 
-    delete = SubmitField(u'Delete your account')
     submit = SubmitField(u'Update preferences')
+
+
+class RemoveSlackForm(FlaskForm):
+    remove_slack = SubmitField(u'Remove Slack Integration')
+
+
+class DeleteForm(FlaskForm):
+    delete = SubmitField(u'Delete your account')
 
 
 class SignupForm(FlaskForm):

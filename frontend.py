@@ -46,6 +46,8 @@ def about():
 @frontend.route('/account/<user>', methods=('GET', 'POST'))
 def account(user=None):
     form = PreferencesForm()
+    remove_slack = RemoveSlackForm()
+    delete_form = DeleteForm()
 
     logger.debug('Data: %s', user)
     logger.debug('Payload: %s', request.args)
@@ -84,7 +86,7 @@ def account(user=None):
             flash('Success! Preferences updated.')
         return redirect(url_for('.index'))
 
-    return render_template('account.html', form=form, user=user)
+    return render_template('account.html', form=form, user=user, remove_slack=remove_slack, delete_form=delete_form)
 
 
 @frontend.route('/subscribe/', methods=('GET', 'POST'))
@@ -106,28 +108,28 @@ def subscribe_form():
     return render_template('subscribe.html', form=form)
 
 
-def email_token(email):
-    return True
+# def email_token(email):
+#     return True
 
 
 @frontend.route('/login', methods=('GET', 'POST'))
 def login():
     form = LoginForm()
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            email_status = email_token(form.email.data)
-            if email_status:
-                flash('Success! Click the link in the email sent to {}'.format(escape(form.email.data)))
-            else:
-                flash('Error sending email to {}. Please contact the sysadmin'.format(escape(form.email.data)))
-            return redirect(url_for('.index'))
-    else:
-        token = request.args.get('t', '')
-        if token:
-            user = authenticate(token)
-            if user:
-                logger.debug('Data: %s', user)
-                return account(user)
-            else:
-                flash('Wrong credentials. Please ensure the link is correct, or request a new token')
+    # if request.method == 'POST':
+    #     if form.validate_on_submit():
+    #         email_status = email_token(form.email.data)
+    #         if email_status:
+    #             flash('Success! Click the link in the email sent to {}'.format(escape(form.email.data)))
+    #         else:
+    #             flash('Error sending email to {}. Please contact the sysadmin'.format(escape(form.email.data)))
+    #         return redirect(url_for('.index'))
+    # else:
+    #     token = request.args.get('t', '')
+    #     if token:
+    #         user = authenticate(token)
+    #         if user:
+    #             logger.debug('Data: %s', user)
+    #             return account(user)
+    #         else:
+    #             flash('Wrong credentials. Please ensure the link is correct, or request a new token')
     return render_template('login.html', form=form)
