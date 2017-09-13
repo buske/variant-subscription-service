@@ -41,7 +41,7 @@ class SignupForm(FlaskForm):
 
     # eula = BooleanField(u'I did not read the <a data-toggle="modal" data-target="#tandc">terms and conditions</a>', validators=[DataRequired()])
 
-    submit = SubmitField(u'Signup')
+    submit = SubmitField(u'Subscribe')
 
 
 class LoginForm(FlaskForm):
