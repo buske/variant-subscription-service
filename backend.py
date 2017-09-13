@@ -18,9 +18,9 @@ logger.setLevel(logging.DEBUG)
 
 backend = Blueprint('backend', __name__)
 
-DEFAULT_RANDOM_BYTES = 32
-# Must be a multiple of 4 to ensure there are no = in the URL
-assert DEFAULT_RANDOM_BYTES % 4 == 0
+DEFAULT_RANDOM_BYTES = 36
+# Must be a multiple of 3 to ensure there are no = in the URL
+assert DEFAULT_RANDOM_BYTES % 3 == 0
 
 # DEFAULT_BCRYPT_ROUNDS = 12
 VARIANT_PART_DELIMITER = '-'
@@ -169,3 +169,15 @@ def subscribe(db, email, variant_strings, genome_build=DEFAULT_GENOME_BUILD):
 
     return num_subscribed
 
+def authenticate(token):
+    db = mongo.db
+    """Given a token, return user data or None if not valid"""
+    return db.users.find_one({ 'token': token })
+
+def get_stats():
+    db = mongo.db
+    # Get number of variants with subscribers
+    subscribed_variants = db.variants.count({ 'subscribers': { '$exists': True, '$ne': [] } })
+    return {
+        'subscribed_variants': subscribed_variants,
+    }

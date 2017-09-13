@@ -16,7 +16,7 @@ logger.setLevel(logging.DEBUG)
 
 from .forms import *
 from .extensions import mongo, nav
-from .backend import subscribe
+from .backend import authenticate, get_stats, subscribe
 
 frontend = Blueprint('frontend', __name__)
 
@@ -31,9 +31,8 @@ nav.register_element('frontend_top', Navbar(
 
 @frontend.route('/')
 def index():
-    import random
-    num_variants = random.randint(1000, 5000)  # get_number_of_variants()
-    return render_template('index.html', num_variants=num_variants)
+    stats = get_stats()
+    return render_template('index.html', stats=stats)
 
 
 @frontend.route('/about/')
@@ -42,16 +41,16 @@ def about():
 
 
 @frontend.route('/account/', methods=('GET', 'POST'))
-@frontend.route('/account/<data>', methods=('GET', 'POST'))
-def account(data=None):
+@frontend.route('/account/<user>', methods=('GET', 'POST'))
+def account(user=None):
     form = PreferencesForm()
 
-    logger.debug('Data: %s', data)
+    logger.debug('Data: %s', user)
     logger.debug('Payload: %s', request.args)
     logger.debug('Validated: %s', form.validate_on_submit())
     logger.debug('Errors: %s', form.errors)
 
-    return render_template('account.html', form=form, data=data)
+    return render_template('account.html', form=form, user=user)
 
 
 @frontend.route('/signup/', methods=('GET', 'POST'))
@@ -84,7 +83,6 @@ def email_token(email):
     return True
 
 
-
 @frontend.route('/login', methods=('GET', 'POST'))
 def login():
     form = LoginForm()
@@ -99,10 +97,10 @@ def login():
     else:
         token = request.args.get('t', '')
         if token:
-            data = validate_and_get_token_data(token)
-            if data:
-                logger.debug('Data: %s', data)
-                return account(data)
+            user = authenticate(token)
+            if user:
+                logger.debug('Data: %s', user)
+                return account(user)
             else:
                 flash('Wrong credentials. Please ensure the link is correct, or request a new token')
     return render_template('login.html', form=form)
