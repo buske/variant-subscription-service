@@ -52,6 +52,14 @@ def account(user=None):
     logger.debug('Validated: %s', form.validate_on_submit())
     logger.debug('Errors: %s', form.errors)
 
+    token = request.args.get('t', '')
+    if token:
+        user = validate_and_get_token_data(token)
+        if not user:
+            flash('Wrong credentials. Please ensure the link is correct, or request a new token')
+            redirect(url_for('.login'))
+    print(user)
+
     slack_code = request.args.get('code', '')
     if slack_code:
         sc = SlackClient('')
@@ -92,7 +100,8 @@ def validate_and_get_token_data(x):
     return {
         'email': 'a@a.com',
         'preferences': '',
-        'slack': ''
+        'slack': '',
+        'token': ''
     }
 
 
