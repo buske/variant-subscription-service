@@ -69,7 +69,8 @@ def build_variant_doc(build, chrom, pos, ref, alt,
         '_id': key,
         'variant': variant,
         'clinvar': clinvar,
-        'subscribers': [],
+        'subscribers': [],  # list of user_ids
+        'tags': {},  # user_id -> tag
     }
 
 
@@ -110,6 +111,14 @@ def subscribe_to_variants(db, user_id, variant_ids):
     return num_subscribed
 
 
+def tag_variants(db, user_id, tag, variant_ids):
+    logger.debug('Tagging {} variants'.format(len(variant_ids)))
+    result = db.variants.update_many({ '_id': { '$in': variant_ids } }, { '$set': { 'tags.{}'.format(user_id): tag } })
+    num_tagged = result.modified_count
+    logger.info('Tagged {} variants'.format(num_tagged))
+    return num_tagged
+
+
 def find_or_create_variants(db, genome_build, variant_strings):
     variant_docs = []
     for variant_string in variant_strings:
@@ -133,7 +142,7 @@ def find_or_create_variants(db, genome_build, variant_strings):
     return variant_docs
 
 
-def subscribe(db, email, variant_strings, genome_build=DEFAULT_GENOME_BUILD, notifier=None):
+def subscribe(db, email, variant_strings, tag=None, genome_build=DEFAULT_GENOME_BUILD, notifier=None):
     user = db.users.find_one({ 'email': email })
     # Create user if they don't exist
     if user is None:
@@ -152,6 +161,8 @@ def subscribe(db, email, variant_strings, genome_build=DEFAULT_GENOME_BUILD, not
     variant_docs = find_or_create_variants(db, genome_build, variant_strings)
     variant_ids = [variant['_id'] for variant in variant_docs]
     num_subscribed = subscribe_to_variants(db, user_id, variant_ids)
+    if tag:
+        num_tagged = tag_variants(db, user_id, tag, variant_ids)
 
     # Send update email
     if num_subscribed > 0 and notifier:
@@ -185,6 +196,7 @@ def set_user_slack_data(user, slack_data):
 
 
 def remove_user_slack_data(user):
+    db = mongo.db
     user_id = deep_get(user, '_id')
     logger.debug('Removing user slack data: {}'.format(user_id))
     if user_id:
@@ -192,11 +204,27 @@ def remove_user_slack_data(user):
 
 
 def suspend_notifications(user):
-    pass
+    db = mongo.db
+    user_id = deep_get(user, '_id')
+    logger.debug('Suspending user notifications: {}'.format(user_id))
+    if user_id:
+        return db.users.update_one({ '_id': user['_id'] }, { '$set': { 'notification_preferences.notify_emails': False, 'notification_preferences.notify_slack': False } })
 
 
-def delete_account(user):
-    pass
+def delete_user(user):
+    db = mongo.db
+    user_id = deep_get(user, '_id')
+    logger.debug('Deleting user: {}'.format(user_id))
+    if user_id:
+        # Remove variant subscriptions
+        result = db.variants.update_many({ 'subscribers': user_id }, { '$pull': { 'subscribers': user_id } })
+        logger.debug('Unsubscribed from {} variants'.format(result.modified_count))
+        # Remove variant tags
+        tag_field = 'tags.{}'.format(user_id)
+        result = db.variants.update_many({ tag_field: { '$exists': True } }, { '$unset': { tag_field: '' } })
+        logger.debug('Removed tags from {} variants'.format(result.modified_count))
+        # Remove account last
+        return db.users.delete_one({ '_id': user['_id'] })
 
 
 def set_preferences(user, form):

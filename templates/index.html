@@ -1,12 +1,7 @@
 {%- extends "base.html" %}
 {% import "bootstrap/utils.html" as utils %}
 
-{% block content %}
-    {%- with messages = get_flashed_messages(with_categories=True) %}
-        {%- if messages %}
-            {{utils.flashed_messages(messages)}}
-        {%- endif %}
-    {%- endwith %}
+{% block inner_content %}
     <div class="container">
         <div class="jumbotron">
             <h1>Welcome to the Variant Subscription Service</h1>

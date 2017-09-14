@@ -58,3 +58,7 @@ class LoginForm(FlaskForm):
     email = StringField(u'Email address to send login token', validators=[Email(), DataRequired()])
 
     submit = SubmitField(u'Send email')
+
+
+class LogoutForm(FlaskForm):
+    submit = SubmitField(u'Log out')

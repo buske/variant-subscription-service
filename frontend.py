@@ -8,12 +8,14 @@
 # You can find out more about blueprints at
 # http://flask.pocoo.org/docs/blueprints/
 
-from flask import Blueprint, render_template, flash, redirect, url_for, request
+import os
+import logging
+
+from functools import wraps
+from flask import Blueprint, render_template, flash, redirect, url_for, request, session, g
 from flask_nav.elements import Navbar, View, Subgroup, Link, Text, Separator
 from markupsafe import escape
-import logging
 from slackclient import SlackClient
-import os
 
 logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s")
 logger = logging.getLogger("frontend")
@@ -22,17 +24,71 @@ logger.setLevel(logging.DEBUG)
 from .forms import *
 from .extensions import mongo, nav
 from .services.notifier import SubscriptionNotifier
-from .backend import authenticate, delete_account, get_stats, remove_user_slack_data, subscribe, set_user_slack_data, set_preferences
+from .backend import authenticate, delete_user, get_stats, remove_user_slack_data, subscribe, set_user_slack_data, set_preferences
 
 frontend = Blueprint('frontend', __name__)
 
-nav.register_element('frontend_top', Navbar(
-    View('VSS', '.index'),
-    View('Home', '.index'),
-    View('About', '.about'),
-    View('Subscribe', '.subscribe_form'),
-    View('Login', '.login'),
-    ))
+
+def top_nav():
+    navbar_items = [
+        View('VSS', '.index'),
+        View('Home', '.index'),
+        View('About', '.about'),
+        View('Subscribe', '.subscribe_form'),
+    ]
+    if g.get('user'):
+        navbar_items.extend([
+            View('Account', '.account'),
+            View('Logout', '.logout')
+        ])
+    else:
+        navbar_items.append(View('Login', '.login'))
+    return Navbar(*navbar_items)
+
+nav.register_element('frontend_top', top_nav)
+
+
+def do_login(token):
+    if token:
+        user = authenticate(token)
+        if user:
+            logger.debug('User logged in: {}'.format(user['email']))
+            session['token'] = token
+            g.user = user
+            return user
+
+
+# If there is a session cookie with the token, resolve to a user object
+@frontend.before_request
+def fetch_user():
+    token = request.args.get('t')
+    if token:
+        logger.debug('Found token in URL')
+    elif session.get('token'):
+        logger.debug('Found token in session')
+        token = session.get('token')
+
+    if token:
+        user = do_login(token)
+        if user:
+            # Store user in request context and session
+            g.user = user
+            session['token'] = token
+        else:
+            flash('Wrong credentials. Please ensure the link is correct, or request a new token', category='danger')
+
+
+def protected(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if g.get('user'):
+            # Already logged in
+            return f(*args, **kwargs)
+        else:
+            flash('You must be logged in to view this page', category='danger')
+            return redirect(url_for('.login'))
+
+    return decorated_function
 
 
 @frontend.route('/')
@@ -47,47 +103,38 @@ def about():
 
 
 @frontend.route('/account/delete/', methods=('GET', 'POST'))
-def delete_account(user=None):
+@protected
+def delete_account():
+    user = g.user
     logger.debug('Deleting: %s', user)
-    success = delete_account(user)
+    success = delete_user(user)
     if success:
-        flash('Your account has been deleted! Now leave.', category='warning')
+        flash('Your account has been deleted! Now leave.', category='info')
     else:
-        flash('Error deleting account')
+        flash('Error deleting account', category='danger')
 
     return redirect(url_for('.index'))
 
 
 @frontend.route('/account/remove_slack/', methods=('GET', 'POST'))
-def remove_slack_from_account(user=None):
+@protected
+def remove_slack_from_account():
+    user = g.user
     logger.debug('Removing Slack integration from: %s', user)
     success = remove_user_slack_data(user)
     if success:
-        flash('Slack integration removed!')
+        flash('Slack integration removed!', category='success')
     else:
-        flash('Error removing Slack integration 😢')
+        flash('Error removing Slack integration 😢', category='danger')
     # TODO: render form again
     # return render_template('account.html', form=form, user=user, remove_slack_form=remove_slack_form, delete_form=delete_form)
     return redirect(url_for('.index'))
 
 
 @frontend.route('/account/', methods=('GET', 'POST'))
-def account(user=None):
-    token = request.args.get('t')
-    state = request.args.get('state')
-
-    if not user and token:
-        logger.debug('Token: %s', token)
-        user = authenticate(token)
-
-    if not user and state:
-        logger.debug('Got state: %s', state)
-        user = authenticate(state)
-
-    if not user:
-        flash('Wrong credentials. Please ensure the link is correct, or request a new token', category='error')
-        return redirect(url_for('.login'))
-
+@protected
+def account():
+    user = g.user
     form = PreferencesForm(data=user.get('notification_preferences'))
     form.token = user['token']
     remove_slack_form = RemoveSlackForm()
@@ -115,17 +162,17 @@ def account(user=None):
         logger.debug('Slack auth response: {}'.format(auth_response))
         success = set_user_slack_data(user, auth_response)
         if success:
-            flash('Slack successfully connected!', category='error')
+            flash('Slack successfully connected!', category='success')
             # Update current user data to ensure render is up-to-date
             user['slack'] = auth_response
         else:
-            flash('Error connecting slack', category='error')
+            flash('Error connecting slack', category='danger')
 
     if form.validate_on_submit():
         logger.debug('Setting preferences: {}'.format(form.data))
         success = set_preferences(user, form)
         if success:
-            flash('Success! Preferences updated.')
+            flash('Success! Preferences updated.', category='success')
 
     return render_template('account.html', form=form, user=user, remove_slack_form=remove_slack_form, delete_form=delete_form)
 
@@ -139,10 +186,11 @@ def subscribe_form():
     if form.validate_on_submit():
         logger.debug('Email: {}'.format(form.email.data))
         logger.debug('Variant: {}'.format(form.chr_pos_ref_alt.data))
+        logger.debug('Tag: {}'.format(form.tag.data))
         notifier = SubscriptionNotifier(mongo.db)
-        num_subscribed = subscribe(mongo.db, form.email.data, [form.chr_pos_ref_alt.data], notifier=notifier)
+        num_subscribed = subscribe(mongo.db, form.email.data, [form.chr_pos_ref_alt.data], tag=form.tag.data, notifier=notifier)
         if num_subscribed > 0:
-            flash('Success! Subscribed to {} new variants'.format(num_subscribed))
+            flash('Subscribed to {} new variants'.format(num_subscribed), category='success')
         else:
             flash('Already subscribed to those variants', category='warning')
         return redirect(url_for('.index'))
@@ -157,21 +205,27 @@ def subscribe_form():
 @frontend.route('/login', methods=('GET', 'POST'))
 def login():
     form = LoginForm()
-    # if request.method == 'POST':
-    #     if form.validate_on_submit():
-    #         email_status = email_token(form.email.data)
-    #         if email_status:
-    #             flash('Success! Click the link in the email sent to {}'.format(escape(form.email.data)))
-    #         else:
-    #             flash('Error sending email to {}. Please contact the sysadmin'.format(escape(form.email.data)))
-    #         return redirect(url_for('.index'))
-    # else:
-    #     token = request.args.get('t', '')
-    #     if token:
-    #         user = authenticate(token)
-    #         if user:
-    #             logger.debug('Data: %s', user)
-    #             return account(user)
-    #         else:
-    #             flash('Wrong credentials. Please ensure the link is correct, or request a new token')
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            email_status = email_token(form.email.data)
+            if email_status:
+                flash('Success! Click the link in the email sent to {}'.format(escape(form.email.data)), category='success')
+            else:
+                flash('Error sending email to {}. Please contact the sysadmin'.format(escape(form.email.data)), category='error')
+            return redirect(url_for('.account'))
+    else:
+        if g.get('user'):
+            return redirect(url_for('.account'))
+
     return render_template('login.html', form=form)
+
+
+@frontend.route('/logout', methods=('GET', 'POST'))
+def logout():
+    form = LogoutForm()
+    if request.method == 'POST':
+        g.user = None
+        session['token'] = None
+        return redirect(url_for('.index'))
+
+    return render_template('logout.html', form=form)
