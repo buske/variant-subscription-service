@@ -30,17 +30,16 @@
             {{ form.hidden_tag() }}
             <h4>Notification type</h4>
             <p>
-                Email {{ form.notify_emails(disabled=not user.slack) }}
+                Email {{ form.notify_emails }}
                 Slack {{ form.notify_slack(disabled=not user.slack) }}
             </p>
 {#        {% for subfield in form.notification_type %}#}
 {#            {{ subfield }} {{ subfield.label }}#}
 {#        {% endfor %}<br/>#}
-            <h4>Transitions</h4>
+            <h4>Transitions - <a id="select_all" onclick="select_options(true)">Select All</a> - <a id="select_none" onclick="select_options(false)">Select None</a><br/></h4>
             <div class="row">
                 <div class="col-md-6">
-                    <table class="table table-bordered">
-                        <a id="select_all" onclick="select_all_options()">Select All</a><br/><a id="select_none">Select None</a><br/>
+                    <table id="option_table" class="table table-bordered">
                         <tr>
                             <th>From <span class="glyphicon glyphicon-arrow-down" aria-hidden="true"></span></th>
                             <th>To <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span></th>
@@ -50,26 +49,26 @@
                         </tr>
                         <tr>
                             <th colspan="2">Unknown/Not in ClinVar</th>
-                            <td>{{ form.unknown_to_benign }}</td>
-                            <td>{{ form.unknown_to_vus }}</td>
-                            <td>{{ form.unknown_to_path }}</td>
+                            <td class="table_option">{{ form.unknown_to_benign }}</td>
+                            <td class="table_option">{{ form.unknown_to_vus }}</td>
+                            <td class="table_option">{{ form.unknown_to_path }}</td>
                         </tr>
                         <tr>
                             <th colspan="2">Benign</th>
                             <td>{{ form.benign_to_benign(disabled=True) }}</td>
-                            <td>{{ form.benign_to_vus }}</td>
-                            <td>{{ form.benign_to_path }}</td>
+                            <td class="table_option">{{ form.benign_to_vus }}</td>
+                            <td class="table_option">{{ form.benign_to_path }}</td>
                         </tr>
                         <tr>
                             <th colspan="2">VUS</th>
-                            <td>{{ form.vus_to_benign }}</td>
+                            <td class="table_option">{{ form.vus_to_benign }}</td>
                             <td>{{ form.vus_to_vus(disabled=True) }}</td>
-                            <td>{{ form.vus_to_path }}</td>
+                            <td class="table_option">{{ form.vus_to_path }}</td>
                         </tr>
                         <tr>
                             <th colspan="2">Pathogenic</th>
-                            <td>{{ form.path_to_vus }}</td>
-                            <td>{{ form.path_to_benign }}</td>
+                            <td class="table_option">{{ form.path_to_vus }}</td>
+                            <td class="table_option">{{ form.path_to_benign }}</td>
                             <td>{{ form.path_to_path(disabled=True) }}</td>
                         </tr>
                     </table><br/>
@@ -83,4 +82,9 @@
         <form action="/account/delete/" method="post">{{ form.hidden_tag() }}{{ wtf.form_field(delete_form.delete, button_map={'delete': 'danger'}) }}</form>
     </div>
     {{ super() }}
+    <script>
+        function select_options(option) {
+            $('td.table_option > input').prop('checked', option);
+        }
+    </script>
 {%- endblock %}
