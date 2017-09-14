@@ -163,8 +163,15 @@ def account():
             v_id = '-'.join([v['chrom'], v['pos'], v['ref'], v['alt']])
             if 'tags' in variant and str(user['_id']) in variant['tags']:
                 v_id += ' ({})'.format(variant['tags'][str(user['_id'])])
-            if 'clinvar' in variant:
-                v_id += ' - Current ClinVar status: {}'.format(variant['clinvar'])
+            if 'clinvar' in variant and 'current' in variant['clinvar']:
+                category = variant['clinvar']['category']
+                try:
+                    stars = int(variant['clinvar']['gold_stars'])
+                except:
+                    stars = 0
+                v_id += ' - ClinVar: {} {}'.format(category, ' '.join(['⭐']*stars))
+            else:
+                pass
             setattr(VariantForm, variant['_id'], BooleanField(v_id))
         variants_form = VariantForm()
     logger.debug('Data: %s', user)
