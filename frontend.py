@@ -200,9 +200,9 @@ def account():
         else:
             flash('Error connecting slack', category='danger')
 
-    if form.validate_on_submit():
-        logger.debug('Deleting variants: {}'.format(form.data))
-        success = unsubscribe(user, form)
+    if variants_form.validate_on_submit():
+        logger.debug('Deleting variants: {}'.format(variants_form.data))
+        success = unsubscribe(user, variants_form)
         if success:
             flash('Success! Preferences updated.', category='success')
 
