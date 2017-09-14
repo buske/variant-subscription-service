@@ -112,6 +112,17 @@ def subscribe_to_variants(db, user_id, variant_ids):
     return num_subscribed
 
 
+def unsubscribe_from_variants(db, user_id, variant_ids):
+    logger.debug('Unsubscribing from {} variants'.format(len(variant_ids)))
+    # Unsubscribe
+    result = db.variants.update_many({ '_id': { '$in': variant_ids } }, { '$pull': { 'subscribers': user_id } })
+    num_unsubscribed = result.modified_count
+    # Remove tags
+    result = db.variants.update_many({ '_id': { '$in': variant_ids } }, { '$unset': { 'tags.{}'.format(user_id): '' } })
+    logger.info('Unsubscribed from {} new variants'.format(num_unsubscribed))
+    return num_unsubscribed
+
+
 def tag_variants(db, user_id, tag, variant_ids):
     logger.debug('Tagging {} variants'.format(len(variant_ids)))
     result = db.variants.update_many({ '_id': { '$in': variant_ids } }, { '$set': { 'tags.{}'.format(user_id): tag } })
@@ -173,14 +184,25 @@ def subscribe(db, email, variant_strings, tag=None, genome_build=DEFAULT_GENOME_
 
 
 def unsubscribe(user, form):
-    pass
+    db = mongo.db
+    user_id = user.get('_id')
+    assert user_id
+
+    ignored_fields = ['csrf_token', 'remove']
+    variant_ids = []
+    for variant_id, should_unsubscribe in form.data.items():
+        if variant_id in ignored_fields or not should_unsubscribe:
+            continue
+        variant_ids.append(variant_id)
+
+    num_unsubscribed = unsubscribe_from_variants(db, user_id, variant_ids)
+    return num_unsubscribed
 
 
 def authenticate(token):
     """Given a token, return user data or None if not valid"""
     db = mongo.db
     user = db.users.find_one({ 'token': token })
-    get_user_subscribed_variants(user)
     return user
 
 

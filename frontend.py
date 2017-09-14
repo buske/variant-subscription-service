@@ -24,7 +24,8 @@ logger.setLevel(logging.DEBUG)
 from .forms import *
 from .extensions import mongo, nav
 from .services.notifier import SubscriptionNotifier, ResendTokenNotifier
-from .backend import authenticate, delete_user, get_stats, remove_user_slack_data, subscribe, set_user_slack_data, set_preferences, get_user_subscribed_variants, suspend_notifications, unsubscribe
+from .backend import authenticate, delete_user, get_stats, get_user_subscribed_variants, remove_user_slack_data, subscribe, set_user_slack_data, set_preferences, suspend_notifications, unsubscribe
+from .utils import deep_get
 
 frontend = Blueprint('frontend', __name__)
 
@@ -157,6 +158,35 @@ def update_preferences():
     return redirect(url_for('.account'))
 
 
+def get_variants_form(user):
+    variants = get_user_subscribed_variants(user)
+    logger.debug('Variants: %s', variants)
+    if variants:
+        for variant in variants['data']:
+            v = variant['variant']
+            v_id = '-'.join([v['chrom'], v['pos'], v['ref'], v['alt']])
+
+            user_id = str(user['_id'])
+            tag = deep_get(variant, 'tags.{}'.format(user_id))
+            category = deep_get(variant, 'clinvar.current.category')
+            gold_stars = deep_get(variant, 'clinvar.current.gold_stars')
+
+            if tag:
+                v_id += ' ({})'.format(tag)
+            if category:
+                try:
+                    stars = int(gold_stars)
+                except:
+                    stars = 0
+                v_id += ' - ClinVar: {} {}'.format(category, ' '.join(['⭐'] * stars))
+
+            setattr(VariantForm, variant['_id'], BooleanField(v_id))
+
+        return VariantForm()
+    else:
+        return None
+
+
 @frontend.route('/account/', methods=('GET', 'POST'))
 @protected
 def account():
@@ -165,30 +195,8 @@ def account():
     remove_slack_form = RemoveSlackForm()
     delete_form = DeleteForm()
     silence_form = SilenceForm()
+    variants_form = get_variants_form(user)
 
-    variants = get_user_subscribed_variants(user)
-    logger.debug('Variants: %s', variants)
-    if not variants:
-        num_variants = 0
-        variants_form = None
-    else:
-        num_variants = variants['total']
-        for variant in variants['data']:
-            v = variant['variant']
-            v_id = '-'.join([v['chrom'], v['pos'], v['ref'], v['alt']])
-            if 'tags' in variant and str(user['_id']) in variant['tags']:
-                v_id += ' ({})'.format(variant['tags'][str(user['_id'])])
-            if 'clinvar' in variant and 'current' in variant['clinvar']:
-                category = variant['clinvar']['category']
-                try:
-                    stars = int(variant['clinvar']['gold_stars'])
-                except:
-                    stars = 0
-                v_id += ' - ClinVar: {} {}'.format(category, ' '.join(['⭐']*stars))
-            else:
-                pass
-            setattr(VariantForm, variant['_id'], BooleanField(v_id))
-        variants_form = VariantForm()
     logger.debug('Data: %s', user)
     logger.debug('Payload: %s', request.args)
     logger.debug('Validated: %s', form.validate_on_submit())
@@ -217,11 +225,13 @@ def account():
 
     if variants_form.validate_on_submit():
         logger.debug('Deleting variants: {}'.format(variants_form.data))
-        success = unsubscribe(user, variants_form)
-        if success:
-            flash('Success! Preferences updated.', category='success')
+        num_unsubscribed = unsubscribe(user, variants_form)
+        if num_unsubscribed > 0:
+            flash('Unsubscribed from {} variants'.format(num_unsubscribed), category='success')
+            # Regenerate variants form
+            variants_form = get_variants_form(user)
 
-    return render_template('account.html', form=form, user=user, variants_form=variants_form, num_variants=num_variants,
+    return render_template('account.html', form=form, user=user, variants_form=variants_form,
                            remove_slack_form=remove_slack_form, delete_form=delete_form, silence_form=silence_form)
 
 
