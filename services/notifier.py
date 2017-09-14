@@ -240,19 +240,13 @@ class UpdateNotifier(Notifier):
                 old_stars = int(old_clinvar['gold_stars'])
             except TypeError:
                 old_stars = 0
-            data.extend([{
+            data.append({
                 'title': 'Classification updated',
-                'value': '{}:{} {}>{} ({})\nSee ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'], variation_id),
+                'value': '{}:{} {}>{} ({})\n{} {} :arrow_right: {} {}\nSee ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
+                                                                                                                                                                    old_clinvar['clinical_significance'], [':star:'] * old_stars,
+                                                                                                                                                                    clinvar['clinical_significance'], [':star:'] * new_stars, variation_id),
                 'short': False
-            }, {
-                'title': 'Previous classification',
-                'value': '{} {}'.format(old_clinvar['clinical_significance'], old_stars),
-                'short': True
-            }, {
-                'title': 'New classification',
-                'value': '{} {}'.format(clinvar['clinical_significance'], new_stars),
-                'short': True
-            }])
+            })
         else:
             data.append({
                 'title': 'New classification',
