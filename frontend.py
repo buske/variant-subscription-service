@@ -89,8 +89,11 @@ def account(user=None):
         return redirect(url_for('.login'))
 
     form = PreferencesForm(data=user.get('notification_preferences'))
+    form.token = user['token']
     remove_slack_form = RemoveSlackForm()
+    remove_slack_form.token = user['token']
     delete_form = DeleteForm()
+    delete_form.token = user['token']
 
     logger.debug('Data: %s', user)
     logger.debug('Payload: %s', request.args)
