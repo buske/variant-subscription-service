@@ -35,19 +35,21 @@ NOTIFICATION_PREFERENCE_MAP = {
 }
 
 
-def render_rating(gold_stars, emoji=False):
+def render_rating(gold_stars, slack_emoji=False, unicode_emoji=False):
     try:
         stars = int(gold_stars)
     except TypeError:
         stars = 0
 
-    if emoji:
+    if slack_emoji:
+        return ''.join([':star:']*stars)
+    elif unicode_emoji:
+        pass
+    else:
         if stars == 1:
             return '1 star'
         else:
             return '{} stars'.format(stars)
-    else:
-        return ''.join([':star:']*stars)
 
 
 class Notifier:
