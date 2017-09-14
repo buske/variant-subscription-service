@@ -24,7 +24,7 @@ logger.setLevel(logging.DEBUG)
 from .forms import *
 from .extensions import mongo, nav
 from .services.notifier import SubscriptionNotifier, ResendTokenNotifier
-from .backend import authenticate, delete_user, get_stats, remove_user_slack_data, subscribe, set_user_slack_data, set_preferences, get_user_subscribed_variants
+from .backend import authenticate, delete_user, get_stats, remove_user_slack_data, subscribe, set_user_slack_data, set_preferences, get_user_subscribed_variants, suspend_notifications
 
 frontend = Blueprint('frontend', __name__)
 
@@ -121,7 +121,7 @@ def delete_account():
 def silence_account():
     user = g.user
     logger.debug('Silencing: %s', user)
-    success = False  # silence_user(user)
+    success = suspend_notifications(user)
     if success:
         flash('Your notifications have been silenced!', category='info')
     else:
