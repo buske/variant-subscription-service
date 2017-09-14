@@ -138,12 +138,14 @@ def account():
     form = PreferencesForm(data=user.get('notification_preferences'))
     remove_slack_form = RemoveSlackForm()
     delete_form = DeleteForm()
-    variants = [user.get('slack')]
+
+    variants = get_user_subscribed_variants(user)
     logger.debug('Variants: %s', variants)
     if not variants:
         variants_form = None
     else:
-        for variant in variants:
+        num_variants = variants['total']
+        for variant in variants['data']:
             setattr(VariantForm, variant['team_id'], BooleanField(variant['team_id']))
         variants_form = VariantForm()
     # logger.debug('Form: %s', variants_form)

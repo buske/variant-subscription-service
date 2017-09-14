@@ -6,6 +6,7 @@ import logging
 from datetime import datetime
 from flask import Blueprint, g
 from base64 import urlsafe_b64encode
+from pymongo import ASCENDING
 
 from .constants import DEFAULT_GENOME_BUILD, DEFAULT_NOTIFICATION_PREFERENCES, UNKNOWN
 from .extensions import mongo
@@ -174,7 +175,9 @@ def subscribe(db, email, variant_strings, tag=None, genome_build=DEFAULT_GENOME_
 def authenticate(token):
     """Given a token, return user data or None if not valid"""
     db = mongo.db
-    return db.users.find_one({ 'token': token })
+    user = db.users.find_one({ 'token': token })
+    get_user_subscribed_variants(user)
+    return user
 
 
 def get_stats():
@@ -249,3 +252,17 @@ def set_preferences(user, form):
     notification_preferences = dict([(field, form[field].data) for field in form_fields])
     logger.debug('Setting notification preferences: {}'.format(notification_preferences))
     return db.users.update_one({ '_id': user['_id'] }, { '$set': { 'notification_preferences': notification_preferences } })
+
+
+def get_user_subscribed_variants(user):
+    db = mongo.db
+    user_id = deep_get(user, '_id')
+    logger.debug('Getting variants for user: {}'.format(user_id))
+    if user_id:
+        limit = 100
+        results = db.variants.find({ 'subscribers': user_id }, limit=limit, sort=[('_id', ASCENDING)])
+        return {
+            'count': results.count(True),
+            'total': results.count(False),
+            'data': list(results),
+        }
