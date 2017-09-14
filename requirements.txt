@@ -7,3 +7,4 @@ Flask-WTF==0.14.2
 sendgrid==5.2.0
 requests==2.18.4
 slackclient==1.0.9
+uWSGI==2.0.15

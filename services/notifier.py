@@ -35,16 +35,14 @@ NOTIFICATION_PREFERENCE_MAP = {
 }
 
 
-def render_rating(gold_stars, slack_emoji=False, unicode_emoji=False):
+def render_rating(gold_stars, unicode_emoji=False, max_stars=4):
     try:
         stars = int(gold_stars)
     except TypeError:
         stars = 0
 
-    if slack_emoji:
-        return ''.join([':star:']*stars)
-    elif unicode_emoji:
-        pass
+    if unicode_emoji:
+        return ('★' * stars) + '☆' * (max_stars - stars)
     else:
         if stars == 1:
             return '1 star'
@@ -239,7 +237,7 @@ class UpdateNotifier(Notifier):
             # Re-classification
             data.append({
                 'title': 'Classification updated',
-                'value': '{}:{} {}>{} ({})\n{} {} :arrow_right: {} {}\nSee ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
+                'value': '{}:{} {}>{} ({})\n{} {} → {} {}\nSee ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
                                                                                                                                                                     old_clinvar['clinical_significance'], render_rating(old_clinvar['gold_stars'], True),
                                                                                                                                                                     clinvar['clinical_significance'], render_rating(clinvar['gold_stars'], True), variation_id),
                 'short': False
