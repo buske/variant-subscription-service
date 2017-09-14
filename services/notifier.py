@@ -34,16 +34,20 @@ NOTIFICATION_PREFERENCE_MAP = {
     },
 }
 
-def render_rating(gold_stars):
+
+def render_rating(gold_stars, emoji=False):
     try:
         stars = int(gold_stars)
     except TypeError:
         stars = 0
 
-    if stars == 1:
-        return '1 star'
+    if emoji:
+        if stars == 1:
+            return '1 star'
+        else:
+            return '{} stars'.format(stars)
     else:
-        return '{} stars'.format(stars)
+        return ''.join([':star:']*stars)
 
 
 class Notifier:
@@ -229,28 +233,20 @@ class UpdateNotifier(Notifier):
         old_clinvar = deep_get(notification, 'old_doc.clinvar.current')
         variation_id = deep_get(notification, 'new_doc.clinvar.variation_id')
         data = []
-        try:
-            new_stars = int(clinvar['gold_stars'])
-        except TypeError:
-            new_stars = 0
         if old_clinvar:
             # Re-classification
-            try:
-                old_stars = int(old_clinvar['gold_stars'])
-            except TypeError:
-                old_stars = 0
             data.append({
                 'title': 'Classification updated',
                 'value': '{}:{} {}>{} ({})\n{} {} :arrow_right: {} {}\nSee ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
-                                                                                                                                                                    old_clinvar['clinical_significance'], ''.join([':star:'] * old_stars),
-                                                                                                                                                                    clinvar['clinical_significance'], ''.join([':star:'] * new_stars), variation_id),
+                                                                                                                                                                    old_clinvar['clinical_significance'], render_rating(old_clinvar['gold_stars'], True),
+                                                                                                                                                                    clinvar['clinical_significance'], render_rating(clinvar['gold_stars'], True), variation_id),
                 'short': False
             })
         else:
             data.append({
                 'title': 'New classification',
                 'value': '{}:{} {}>{} ({})\n{} {}\nSee ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'], clinvar['clinical_significance'],
-                                                                                                                                                ''.join([':star:'] * new_stars), variation_id),
+                                                                                                                                                render_rating(clinvar['gold_stars'], True), variation_id),
                 'short': False
             })
         return data
