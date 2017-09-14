@@ -116,6 +116,20 @@ def delete_account():
     return redirect(url_for('.index'))
 
 
+@frontend.route('/account/silence/', methods=('GET', 'POST'))
+@protected
+def silence_account():
+    user = g.user
+    logger.debug('Silencing: %s', user)
+    success = False  # silence_user(user)
+    if success:
+        flash('Your notifications have been silenced!', category='info')
+    else:
+        flash('Error silencing notifications', category='danger')
+
+    return redirect(url_for('.account'))
+
+
 @frontend.route('/account/remove_slack/', methods=('GET', 'POST'))
 @protected
 def remove_slack_from_account():
@@ -150,6 +164,7 @@ def account():
     form = PreferencesForm(data=user.get('notification_preferences'))
     remove_slack_form = RemoveSlackForm()
     delete_form = DeleteForm()
+    silence_form = SilenceForm()
 
     variants = get_user_subscribed_variants(user)
     logger.debug('Variants: %s', variants)
@@ -207,7 +222,7 @@ def account():
             flash('Success! Preferences updated.', category='success')
 
     return render_template('account.html', form=form, user=user, variants_form=variants_form, num_variants=num_variants,
-                           remove_slack_form=remove_slack_form, delete_form=delete_form)
+                           remove_slack_form=remove_slack_form, delete_form=delete_form, silence_form=silence_form)
 
 
 @frontend.route('/subscribe/', methods=('GET', 'POST'))

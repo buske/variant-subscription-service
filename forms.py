@@ -38,6 +38,10 @@ class DeleteForm(FlaskForm):
     delete = SubmitField(u'Delete your account')
 
 
+class SilenceForm(FlaskForm):
+    silence = SubmitField(u'Silence all notifications')
+
+
 class VariantForm(FlaskForm):
     remove = SubmitField(u'Remove selected variants')
 

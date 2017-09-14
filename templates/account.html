@@ -84,11 +84,15 @@
                     </div>
                     <div class="modal-body">
                         <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+                        <form action="/account/silence/" method="post">
+                            Perhaps you'd prefer to:
+                            {{ silence_form.hidden_tag() }}{{ wtf.form_field(silence_form.silence, button_map={'silence': 'primary'}) }}
+                        </form>
                     </div>
                     <div class="modal-footer">
                         <form action="/account/delete/" method="post">
                             <a class="btn btn-default" data-dismiss="modal">Close</a>&nbsp;
-                            {{ form.hidden_tag() }}{{ wtf.form_field(delete_form.delete, button_map={'delete': 'danger'}) }}
+                            {{ delete_form.hidden_tag() }}{{ wtf.form_field(delete_form.delete, button_map={'delete': 'danger'}) }}
                         </form>
                     </div>
                 </div>
