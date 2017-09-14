@@ -1,0 +1,32 @@
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name variantfacts.com;
+
+    ssl_certificate /etc/letsencrypt/live/www.variantfacts.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/www.variantfacts.com/privkey.pem; # managed by Certbot
+    ssl_dhparam /etc/ssl/certs/dhparam.pem;
+
+    return 301 https://www.variantfacts.com$request_uri;
+}
+
+server {
+    listen 80;
+    server_name www.variantfacts.com;
+    return 301 https://www.variantfacts.com$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name www.variantfacts.com;
+
+    ssl_certificate /etc/letsencrypt/live/www.variantfacts.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/www.variantfacts.com/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/ssl/certs/dhparam.pem;
+
+    location / {
+        include uwsgi_params;
+        uwsgi_pass unix:/var/www/vss/vss.sock;
+    }
+}
