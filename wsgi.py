@@ -1,4 +1,4 @@
-from application import app
+from vss import app
 
 if __name__ == "__main__":
     app.run()

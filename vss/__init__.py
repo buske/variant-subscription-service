@@ -26,3 +26,5 @@ def register_extensions(app):
     CSRFProtect(app)
     mongo.init_app(app)
     nav.init_app(app)
+
+app = create_app()

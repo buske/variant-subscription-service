@@ -1,0 +1,13 @@
+[Unit]
+Description=uWSGI instance to serve vss
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/vss
+Environment="PATH=/var/www/vss/.virtualenv/bin"
+ExecStart=/var/www/vss/.virtualenv/bin/uwsgi --ini vss.ini
+
+[Install]
+WantedBy=multi-user.target

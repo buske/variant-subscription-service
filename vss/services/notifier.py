@@ -50,6 +50,14 @@ def render_rating(gold_stars, unicode_emoji=False, max_stars=4):
             return '{} stars'.format(stars)
 
 
+def render_rating_slack(gold_stars):
+    try:
+        stars = int(gold_stars)
+    except TypeError:
+        stars = 0
+
+
+
 class Notifier:
     def notify(self, user, subject, body, force_email=True):
         # force_email is used for overriding the user preferences to receive email
@@ -249,6 +257,7 @@ class UpdateNotifier(Notifier):
                                                                                                                                                 render_rating(clinvar['gold_stars'], True), variation_id),
                 'short': False
             })
+        logger.debug('DATA: {}'.format(data))
         return data
 
     def send_notifications(self):
