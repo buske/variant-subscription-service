@@ -172,6 +172,10 @@ def subscribe(db, email, variant_strings, tag=None, genome_build=DEFAULT_GENOME_
     return num_subscribed
 
 
+def unsubscribe(user, form):
+    pass
+
+
 def authenticate(token):
     """Given a token, return user data or None if not valid"""
     db = mongo.db

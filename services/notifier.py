@@ -47,12 +47,13 @@ def render_rating(gold_stars):
 
 
 class Notifier:
-    def notify(self, user, subject, body):
+    def notify(self, user, subject, body, force_email=True):
+        # force_email is used for overriding the user preferences to receive email
         email = user.get('email')
         slack_url = deep_get(user, 'slack.incoming_webhook.url')
 
         # Take into account user notification preferences
-        can_email_user = email and deep_get(user, 'notification_preferences.notify_emails', DEFAULT_NOTIFICATION_PREFERENCES['notify_emails'])
+        can_email_user = email and (force_email or deep_get(user, 'notification_preferences.notify_emails', DEFAULT_NOTIFICATION_PREFERENCES['notify_emails']))
         can_slack_user = slack_url and deep_get(user, 'notification_preferences.notify_slack', DEFAULT_NOTIFICATION_PREFERENCES['notify_slack'])
         logger.debug('Notifications for user {}: email={} slack={}'.format(email, can_email_user, can_slack_user))
 
@@ -74,6 +75,32 @@ class Notifier:
                 logger.debug('Posted to Slack: {}'.format(response.text))
 
 
+class ResendTokenNotifier(Notifier):
+    def __init__(self, db):
+        self.db = db
+
+    def resend_token(self, email):
+        user = None
+        if email:
+            user = self.db.users.find_one({ 'email': email })
+
+        if user:
+            logger.debug('Resending token to: {}'.format(email))
+            token = user['token']
+
+            account_url = '{}/account/?t={}'.format(BASE_URL, token)
+
+            subject = '🚀  Your login link for variant subscription service'
+            body = """
+Here is a link to manage your account: {}
+
+This link gives full access to your account, so keep it private.
+""".format(account_url)
+
+            self.notify(user, subject, body, force_email=True)
+            return True
+
+
 class SubscriptionNotifier(Notifier):
     def __init__(self, db):
         self.db = db
@@ -85,7 +112,7 @@ class SubscriptionNotifier(Notifier):
 
         total_subscription_count = self.db.variants.count({ 'subscribers': user_id })
 
-        account_url = '{}/account?t={}'.format(BASE_URL, token)
+        account_url = '{}/account/?t={}'.format(BASE_URL, token)
 
         # send welcome email
         if new_subscription_count == 1:

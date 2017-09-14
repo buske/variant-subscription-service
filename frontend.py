@@ -23,7 +23,7 @@ logger.setLevel(logging.DEBUG)
 
 from .forms import *
 from .extensions import mongo, nav
-from .services.notifier import SubscriptionNotifier
+from .services.notifier import SubscriptionNotifier, ResendTokenNotifier
 from .backend import authenticate, delete_user, get_stats, remove_user_slack_data, subscribe, set_user_slack_data, set_preferences, get_user_subscribed_variants
 
 frontend = Blueprint('frontend', __name__)
@@ -229,6 +229,22 @@ def subscribe_form():
         return redirect(url_for('.index'))
 
     return render_template('subscribe.html', form=form)
+
+
+@frontend.route('/login', methods=('GET', 'POST'))
+def login():
+    form = LoginForm()
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            email = form.email.data
+            notifier = ResendTokenNotifier(mongo.db)
+            success = notifier.resend_token(email)
+            if success:
+                flash('Sent! Please check your email for a login link', category='success')
+            else:
+                flash('Error sending email', category='danger')
+
+    return render_template('login.html', form=form)
 
 
 @frontend.route('/logout', methods=('GET', 'POST'))

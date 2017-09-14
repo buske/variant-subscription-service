@@ -10,7 +10,7 @@
     <div class="col-md-4">
         <form method="post">
             {{ form.hidden_tag() }}
-            {{ wtf.quick_form(form) }}
+            {{ wtf.quick_form(form, button_map={'submit': 'primary'}) }}
         </form>
     </div>
     </div>
