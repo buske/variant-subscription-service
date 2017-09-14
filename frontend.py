@@ -158,10 +158,13 @@ def update_preferences():
     return redirect(url_for('.account'))
 
 
-def get_variants_form(user):
+def create_variants_form(user):
     variants = get_user_subscribed_variants(user)
     logger.debug('Variants: %s', variants)
     if variants:
+        class CustomVariantForm(VariantForm):
+            pass
+
         for variant in variants['data']:
             v = variant['variant']
             v_id = '-'.join([v['chrom'], v['pos'], v['ref'], v['alt']])
@@ -180,9 +183,9 @@ def get_variants_form(user):
                     stars = 0
                 v_id += ' - ClinVar: {} {}'.format(category, ' '.join(['⭐'] * stars))
 
-            setattr(VariantForm, variant['_id'], BooleanField(v_id))
+            setattr(CustomVariantForm, variant['_id'], BooleanField(v_id))
 
-        return VariantForm()
+        return CustomVariantForm()
     else:
         return None
 
@@ -195,7 +198,7 @@ def account():
     remove_slack_form = RemoveSlackForm()
     delete_form = DeleteForm()
     silence_form = SilenceForm()
-    variants_form = get_variants_form(user)
+    variants_form = create_variants_form(user)
 
     logger.debug('Data: %s', user)
     logger.debug('Payload: %s', request.args)
@@ -229,7 +232,7 @@ def account():
         if num_unsubscribed > 0:
             flash('Unsubscribed from {} variants'.format(num_unsubscribed), category='success')
             # Regenerate variants form
-            variants_form = get_variants_form(user)
+            variants_form = create_variants_form(user)
 
     return render_template('account.html', form=form, user=user, variants_form=variants_form,
                            remove_slack_form=remove_slack_form, delete_form=delete_form, silence_form=silence_form)
