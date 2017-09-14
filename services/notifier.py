@@ -80,14 +80,14 @@ class Notifier:
                     "fallback": "Summary of your variants",
                     "color": "#36a64f",
                     "pretext": "You have {} updates for your variants".format(len(data)),
-                    "author_name": "Variant Subscription Service",
+                    "author_name": "Variant Facts",
                     "author_link": "http://127.0.0.1:5000",
                     "author_icon": "http://flickr.com/icons/bobby.jpg",
                     # "title": "New classification for your variants",
                     "fields": data,
                     "image_url": "http://my-website.com/path/to/image.jpg",
                     "thumb_url": "http://example.com/path/to/thumb.png",
-                    "footer": "VSS",
+                    "footer": "Variant Facts",
                     "footer_icon": "https://platform.slack-edge.com/img/default_application_icon.png"
                 }
             ]
@@ -120,7 +120,7 @@ class ResendTokenNotifier(Notifier):
 
             account_url = '{}/account/?t={}'.format(BASE_URL, token)
 
-            subject = '🚀  Your login link for variant subscription service'
+            subject = '🚀  Your login link for Variant Facts'
             body = """
 Here is a link to manage your account: {}
 

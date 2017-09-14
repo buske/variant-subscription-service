@@ -1,4 +1,7 @@
-# Variant Subscription Service (VSS)
+# Variant Facts
+
+## (Formerly the Variant Subscription Service (VSS))
+
 Subscribe to important updates on genomic variants of interest, such as changes in ClinVar classification
 
 ## Setup

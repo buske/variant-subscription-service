@@ -7,7 +7,7 @@ sg = sendgrid.SendGridAPIClient(apikey=os.environ.get('SENDGRID_API_KEY'))
 
 def build_mail(to_email, subject, body):
     mail = Mail()
-    mail.from_email = Email("support@example.com", "Variant Subscription Service")
+    mail.from_email = Email("support@example.com", "Variant Facts")
     mail.subject = subject
 
     personalization = Personalization()
