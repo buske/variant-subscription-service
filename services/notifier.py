@@ -50,12 +50,10 @@ class Notifier:
     def notify(self, user, subject, body, force_email=True):
         # force_email is used for overriding the user preferences to receive email
         email = user.get('email')
-        slack_url = deep_get(user, 'slack.incoming_webhook.url')
 
         # Take into account user notification preferences
         can_email_user = email and (force_email or deep_get(user, 'notification_preferences.notify_emails', DEFAULT_NOTIFICATION_PREFERENCES['notify_emails']))
-        can_slack_user = slack_url and deep_get(user, 'notification_preferences.notify_slack', DEFAULT_NOTIFICATION_PREFERENCES['notify_slack'])
-        logger.debug('Notifications for user {}: email={} slack={}'.format(email, can_email_user, can_slack_user))
+        logger.debug('Notifications for user {}: email={}'.format(email, can_email_user))
 
         if can_email_user:
             logger.debug('Sending notification to email: {}'.format(email))
@@ -66,9 +64,36 @@ class Notifier:
             else:
                 logger.debug('Sent email:\n  to: {}\n  subject: {!r}\n  body: {!r}\n  response: {}'.format(email, subject, body, response.body))
 
+    def slack_notify(self, user, data):
+        email = user.get('email')
+        slack_url = deep_get(user, 'slack.incoming_webhook.url')
+
+        json = {
+            "attachments": [
+                {
+                    "fallback": "Summary of your variants",
+                    "color": "#36a64f",
+                    "pretext": "You have {} updates for your variants".format(len(data)),
+                    "author_name": "Variant Subscription Service",
+                    "author_link": "http://127.0.0.1:5000",
+                    "author_icon": "http://flickr.com/icons/bobby.jpg",
+                    # "title": "New classification for your variants",
+                    "fields": data,
+                    "image_url": "http://my-website.com/path/to/image.jpg",
+                    "thumb_url": "http://example.com/path/to/thumb.png",
+                    "footer": "VSS",
+                    "footer_icon": "https://platform.slack-edge.com/img/default_application_icon.png",
+                    "ts": 123456789
+                }
+            ]
+        }
+        # Take into account user notification preferences
+        can_slack_user = slack_url and deep_get(user, 'notification_preferences.notify_slack', DEFAULT_NOTIFICATION_PREFERENCES['notify_slack'])
+        logger.debug('Notifications for user {}: slack={}'.format(email, can_slack_user))
+
         if can_slack_user:
             logger.debug('Posting notification to slack')
-            response = requests.post(slack_url, json={"text": body})
+            response = requests.post(slack_url, json=json)
             if response.status_code != 200:
                 logger.error('Error posting to Slack ({}): {}'.format(response.status_code, response.text))
             else:
@@ -199,6 +224,43 @@ class UpdateNotifier(Notifier):
            clinvar['clinical_significance'], render_rating(clinvar['gold_stars']),
            variation_id)
 
+    def make_slack_notification(self, notification):
+        variant = deep_get(notification, 'new_doc.variant')
+        clinvar = deep_get(notification, 'new_doc.clinvar.current')
+        old_clinvar = deep_get(notification, 'old_doc.clinvar.current')
+        variation_id = deep_get(notification, 'new_doc.clinvar.variation_id')
+        data = []
+        try:
+            new_stars = int(clinvar['gold_stars'])
+        except TypeError:
+            new_stars = 0
+        if old_clinvar:
+            # Re-classification
+            try:
+                old_stars = int(old_clinvar['gold_stars'])
+            except TypeError:
+                old_stars = 0
+            data.extend([{
+                'title': 'Classification updated',
+                'value': '{}:{} {}>{} ({})\nSee ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'], variation_id),
+                'short': False
+            }, {
+                'title': 'Previous classification',
+                'value': '{} {}'.format(old_clinvar['clinical_significance'], old_stars),
+                'short': True
+            }, {
+                'title': 'New classification',
+                'value': '{} {}'.format(clinvar['clinical_significance'], new_stars),
+                'short': True
+            }])
+        else:
+            data.append({
+                'title': 'New classification',
+                'value': '{}:{} {}>{} ({})\n{} {}\nSee ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'], clinvar['clinical_significance'], new_stars, variation_id),
+                'short': False
+            })
+        return data
+
     def send_notifications(self):
         logger.debug('Sending notifications to {} users'.format(len(self.notifications)))
         for user_id, user_notifications in self.notifications.items():
@@ -212,9 +274,12 @@ class UpdateNotifier(Notifier):
                 subject = "🎉  News for {} variants".format(notification_count)
 
             text_parts = []
+            slack_text_parts = []
             for i, notification in enumerate(user_notifications):
                 part = '{}. {}'.format(i + 1, self.make_notification(notification))
                 text_parts.append(part)
+                slack_text_parts.append(self.make_slack_notification(notification))
 
             text = '\n'.join(text_parts)
             self.notify(user, subject, text)
+            self.slack_notify(user, text)
