@@ -26,7 +26,7 @@
                 {% else %}
                     <a href="https://slack.com/oauth/authorize?&client_id=229170903971.240424418293&scope=incoming-webhook&state={{ user.token }}"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a><br/>
                 {% endif %}
-                <form method="post">
+                <form method="post" action="/account/update/">
                     {{ form.hidden_tag() }}
                     <h4>Notification type</h4>
                     <p>

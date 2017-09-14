@@ -126,9 +126,21 @@ def remove_slack_from_account():
         flash('Slack integration removed!', category='success')
     else:
         flash('Error removing Slack integration 😢', category='danger')
-    # TODO: render form again
-    # return render_template('account.html', form=form, user=user, remove_slack_form=remove_slack_form, delete_form=delete_form)
-    return redirect(url_for('.index'))
+    return redirect(url_for('.account'))
+
+
+@frontend.route('/account/update/', methods=('GET', 'POST'))
+@protected
+def update_preferences():
+    user = g.user
+    form = PreferencesForm(data=user.get('notification_preferences'))
+
+    if form.validate_on_submit():
+        logger.debug('Setting preferences: {}'.format(form.data))
+        success = set_preferences(user, form)
+        if success:
+            flash('Success! Preferences updated.', category='success')
+    return redirect(url_for('.account'))
 
 
 @frontend.route('/account/', methods=('GET', 'POST'))
@@ -142,6 +154,7 @@ def account():
     variants = get_user_subscribed_variants(user)
     logger.debug('Variants: %s', variants)
     if not variants:
+        num_variants = 0
         variants_form = None
     else:
         num_variants = variants['total']
@@ -177,8 +190,8 @@ def account():
             flash('Error connecting slack', category='danger')
 
     if form.validate_on_submit():
-        logger.debug('Setting preferences: {}'.format(form.data))
-        success = set_preferences(user, form)
+        logger.debug('Deleting variants: {}'.format(form.data))
+        success = unsubscribe(user, form)
         if success:
             flash('Success! Preferences updated.', category='success')
 
