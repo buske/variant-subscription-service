@@ -8,9 +8,10 @@ from .frontend import frontend
 from .extensions import mongo, nav
 
 def create_app():
-    app = Flask('vss')
-    app.config['MONGO_DBNAME'] = MONGO_DBNAME
-    app.config['SECRET_KEY'] = 'verysecret'
+    app = Flask('vss', instance_relative_config=True)
+
+    app.config.from_object('config')
+    app.config.from_pyfile('config.py')
 
     register_blueprints(app)
     register_extensions(app)
