@@ -178,10 +178,25 @@ def get_stats():
 def set_user_slack_data(user, slack_data):
     db = mongo.db
     logger.debug('Setting user slack data: {}'.format(slack_data))
-    user_id = user.get('_id')
-    ok = slack_data.get('ok')
+    user_id = deep_get(user, '_id')
+    ok = deep_get(slack_data, 'ok')
     if user_id and ok:
         return db.users.update_one({ '_id': user['_id'] }, { '$set': { 'slack': slack_data } })
+
+
+def remove_user_slack_data(user):
+    user_id = deep_get(user, '_id')
+    logger.debug('Removing user slack data: {}'.format(user_id))
+    if user_id:
+        return db.users.update_one({ '_id': user['_id'] }, { '$set': { 'slack': None } })
+
+
+def suspend_notifications(user):
+    pass
+
+
+def delete_account(user):
+    pass
 
 
 def set_preferences(user, form):
@@ -199,6 +214,9 @@ def set_preferences(user, form):
         'unknown_to_path',
         'benign_to_path',
         'vus_to_path',
+
+        'notify_emails',
+        'notify_slack',
     ]
     notification_preferences = dict([(field, form[field].data) for field in form_fields])
     logger.debug('Setting notification preferences: {}'.format(notification_preferences))

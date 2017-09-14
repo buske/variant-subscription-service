@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 # This contains our frontend; since it is a bit messy to use the @app.route
 # decorator style when using application factories, all of our routes are
 # inside blueprints. This is the front-facing blueprint.
@@ -19,7 +22,7 @@ logger.setLevel(logging.DEBUG)
 from .forms import *
 from .extensions import mongo, nav
 from .services.notifier import SubscriptionNotifier
-from .backend import authenticate, get_stats, subscribe, set_user_slack_data, set_preferences
+from .backend import authenticate, delete_account, get_stats, remove_user_slack_data, subscribe, set_user_slack_data, set_preferences
 
 frontend = Blueprint('frontend', __name__)
 
@@ -46,15 +49,24 @@ def about():
 @frontend.route('/account/delete/', methods=('GET', 'POST'))
 def delete_account(user=None):
     logger.debug('Deleting: %s', user)
-    # TODO: add delete function
-    flash('Your account has been deleted! Now leave.')
+    success = delete_account(user)
+    if success:
+        flash('Your account has been deleted! Now leave.')
+    else:
+        flash('Error deleting account')
+
     return redirect(url_for('.index'))
 
 
 @frontend.route('/account/remove_slack/', methods=('GET', 'POST'))
 def remove_slack_from_account(user=None):
     logger.debug('Removing Slack integration from: %s', user)
-    # TODO: add remove slack functionality, and render form again
+    success = remove_user_slack_data(user)
+    if success:
+        flash('Slack integration removed!')
+    else:
+        flash('Error removing Slack integration 😢')
+    # TODO: render form again
     # return render_template('account.html', form=form, user=user, remove_slack_form=remove_slack_form, delete_form=delete_form)
     return redirect(url_for('.index'))
 

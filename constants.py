@@ -21,4 +21,7 @@ DEFAULT_NOTIFICATION_PREFERENCES = {
     'unknown_to_path': True,
     'benign_to_path': True,
     'vus_to_path': True,
+
+    'notify_emails': True,
+    'notify_slack': True,
 }

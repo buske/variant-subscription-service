@@ -48,11 +48,15 @@ def render_rating(gold_stars):
 
 class Notifier:
     def notify(self, user, subject, body):
-        # TODO: per-user preference of slack vs. email notification
         email = user.get('email')
         slack_url = deep_get(user, 'slack.incoming_webhook.url')
 
-        if email:
+        # Take into account user notification preferences
+        can_email_user = email and deep_get(user, 'notification_preferences.notify_emails', DEFAULT_NOTIFICATION_PREFERENCES['notify_emails'])
+        can_slack_user = slack_url and deep_get(user, 'notification_preferences.notify_slack', DEFAULT_NOTIFICATION_PREFERENCES['notify_slack'])
+        logger.debug('Notifications for user {}: email={} slack={}'.format(email, can_email_user, can_slack_user))
+
+        if can_email_user:
             logger.debug('Sending notification to email: {}'.format(email))
             mail = build_mail(email, subject, body)
             response = send_mail(mail)
@@ -61,7 +65,7 @@ class Notifier:
             else:
                 logger.debug('Sent email:\n  to: {}\n  subject: {!r}\n  body: {!r}\n  response: {}'.format(email, subject, body, response.body))
 
-        if slack_url:
+        if can_slack_user:
             logger.debug('Posting notification to slack')
             response = requests.post(slack_url, json={"text": body})
             if response.status_code != 200:
@@ -89,12 +93,11 @@ class SubscriptionNotifier(Notifier):
         else:
             subject = "🙌  Subscribed to {} variants".format(new_subscription_count)
 
-        text = """
-    You subscribed to {} new variants!
+        text = """You subscribed to {} new variants!
 
-    You're now subscribed to a total of {} variants.
+You're now subscribed to a total of {} variants.
 
-    Manage your account here: {}
+Manage your account here: {}
     """.format(new_subscription_count, total_subscription_count, account_url)
 
         self.notify(user, subject, text)
@@ -119,7 +122,7 @@ class UpdateNotifier(Notifier):
 
     def should_notify_user(self, user, old_category, new_category):
         preference_field = self._get_preference_name(old_category, new_category)
-        should_notify = user.get('notification_preferences', DEFAULT_NOTIFICATION_PREFERENCES).get(preference_field)
+        should_notify = deep_get(user, 'notification_preferences.{}'.format(preference_field, DEFAULT_NOTIFICATION_PREFERENCES[preference_field]))
 
         if should_notify is None:
             logger.error('Missing user notification preference for {} -> {}'.format(old_category, new_category))
@@ -153,9 +156,9 @@ class UpdateNotifier(Notifier):
         if old_clinvar:
             # Re-classification
             return """classification updated: {}:{} {}>{} ({})
-- new classification: {} ({})
-- previous classification: {} ({})
-- See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/
+  - new classification: {} ({})
+  - previous classification: {} ({})
+  - See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/
 """.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
            clinvar['clinical_significance'], render_rating(clinvar['gold_stars']),
            old_clinvar['clinical_significance'], render_rating(old_clinvar['gold_stars']),
@@ -163,8 +166,8 @@ class UpdateNotifier(Notifier):
         else:
             # New classification
             return """new classification: {}:{} {}>{} ({})
-- {} ({})
-- See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/
+  - {} ({})
+  - See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/
 """.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
            clinvar['clinical_significance'], render_rating(clinvar['gold_stars']),
            variation_id)
