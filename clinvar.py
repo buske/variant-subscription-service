@@ -24,7 +24,6 @@ def parse_clinvar_category(significance):
     if significance in CLINVAR_CATEGORY_MAPPING:
         category = CLINVAR_CATEGORY_MAPPING[significance]
     else:
-        logger.warning('Unknown significance: {}'.format(significance))
         category = UNKNOWN
 
     return category

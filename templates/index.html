@@ -2,22 +2,20 @@
 {% import "bootstrap/utils.html" as utils %}
 
 {% block content %}
+    {%- with messages = get_flashed_messages(with_categories=True) %}
+        {%- if messages %}
+            {{utils.flashed_messages(messages)}}
+        {%- endif %}
+    {%- endwith %}
     <div class="container">
-        {%- with messages = get_flashed_messages(with_categories=True) %}
-            {%- if messages %}
-                <div class="row">
-                    <div class="col-md-12">
-                        {{utils.flashed_messages(messages)}}
-                    </div>
-                </div>
-            {%- endif %}
-        {%- endwith %}
         <div class="jumbotron">
-        <h1>Welcome to the Variant Subscription Service</h1>
-        <p>Join the millions of people who have subscribed to Clinvar updates for their favorite variants.</p>
-    </div>
-    <div class="col-lg-6">
-        {{ stats.subscribed_variants }} variants being tracked so far!
+            <h1>Welcome to the Variant Subscription Service</h1>
+            <p>Join the millions of people who have subscribed to Clinvar updates for their favorite variants.</p>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
+            {{ stats.subscribed_variants }} variants being tracked so far!
+            </div>
         </div>
     </div>
     {{ super() }}

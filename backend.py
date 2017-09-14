@@ -7,10 +7,11 @@ from datetime import datetime
 from flask import Blueprint, g
 from base64 import urlsafe_b64encode
 
-from .constants import DEFAULT_GENOME_BUILD, BASE_URL, DEFAULT_NOTIFICATION_PREFERENCES, UNKNOWN
+from .constants import DEFAULT_GENOME_BUILD, DEFAULT_NOTIFICATION_PREFERENCES, UNKNOWN
 from .extensions import mongo
 from .services.mailer import build_mail, send_mail
 from .clinvar import parse_clinvar_category
+from .utils import deep_get
 
 logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s")
 logger = logging.getLogger(__name__)
@@ -25,15 +26,13 @@ assert DEFAULT_RANDOM_BYTES % 3 == 0
 # DEFAULT_BCRYPT_ROUNDS = 12
 VARIANT_PART_DELIMITER = '-'
 
+
 def make_variant_key(build, chrom, pos, ref, alt):
     return '-'.join([build, chrom, pos, ref, alt])
 
 
 def get_variant_category(doc):
-    if doc:
-        return doc.get('clinvar', {}).get('current', {}).get('category', UNKNOWN)
-    else:
-        return UNKNOWN
+    return deep_get(doc, 'clinvar.current.category', UNKNOWN)
 
 
 def build_variant_doc(build, chrom, pos, ref, alt,
@@ -111,26 +110,6 @@ def subscribe_to_variants(db, user_id, variant_ids):
     return num_subscribed
 
 
-def send_subscription_email(db, user_id, user_email, token, num_subscribed, total_subscribed):
-
-    account_url = '{}/account?t={}'.format(BASE_URL, token)
-
-    # send welcome email
-    subject = "🙌  Subscribed to {} variants".format(num_subscribed)
-    body = """
-You're now subscribed to {} new variants
-
-You're subscribed to a total of {} variants
-
-Manage your account here: {}
-""".format(num_subscribed, total_subscribed, account_url)
-
-    logger.debug('Sending subscription email to: {}'.format(user_email))
-    mail = build_mail(user_email, subject, body)
-    send_mail(mail)
-    logger.info('Sent subscription email to: {}'.format(user_email))
-
-
 def find_or_create_variants(db, genome_build, variant_strings):
     variant_docs = []
     for variant_string in variant_strings:
@@ -154,7 +133,7 @@ def find_or_create_variants(db, genome_build, variant_strings):
     return variant_docs
 
 
-def subscribe(db, email, variant_strings, genome_build=DEFAULT_GENOME_BUILD):
+def subscribe(db, email, variant_strings, genome_build=DEFAULT_GENOME_BUILD, notifier=None):
     user = db.users.find_one({ 'email': email })
     # Create user if they don't exist
     if user is None:
@@ -175,9 +154,8 @@ def subscribe(db, email, variant_strings, genome_build=DEFAULT_GENOME_BUILD):
     num_subscribed = subscribe_to_variants(db, user_id, variant_ids)
 
     # Send update email
-    if num_subscribed > 0:
-        total_subscribed = db.variants.count({ 'subscribers': user_id })
-        send_subscription_email(db, user_id, email, token, num_subscribed, total_subscribed)
+    if num_subscribed > 0 and notifier:
+        notifier.notify_of_subscription(user_id, num_subscribed)
 
     return num_subscribed
 
@@ -198,10 +176,12 @@ def get_stats():
 
 
 def set_user_slack_data(user, slack_data):
-    # TODO: need to handle bad auth responses, e.g.: {'error': 'bad_redirect_uri', 'ok': False}
     db = mongo.db
-    assert user['_id']
-    return db.users.update_one({ '_id': user['_id'] }, { '$set': { 'slack': slack_data } })
+    logger.debug('Setting user slack data: {}'.format(slack_data))
+    user_id = user.get('_id')
+    ok = slack_data.get('ok')
+    if user_id and ok:
+        return db.users.update_one({ '_id': user['_id'] }, { '$set': { 'slack': slack_data } })
 
 
 def set_preferences(user, form):

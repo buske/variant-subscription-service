@@ -18,6 +18,7 @@ logger.setLevel(logging.DEBUG)
 
 from .forms import *
 from .extensions import mongo, nav
+from .services.notifier import SubscriptionNotifier
 from .backend import authenticate, get_stats, subscribe, set_user_slack_data, set_preferences
 
 frontend = Blueprint('frontend', __name__)
@@ -97,7 +98,13 @@ def account(user=None):
             code=slack_code
         )
         logger.debug('Slack auth response: {}'.format(auth_response))
-        set_user_slack_data(user, auth_response)
+        success = set_user_slack_data(user, auth_response)
+        if success:
+            flash('Slack successfully connected!')
+            # Update current user data to ensure render is up-to-date
+            user['slack'] = auth_response
+        else:
+            flash('Error connecting slack')
 
     if form.validate_on_submit():
         logger.debug('Setting preferences: {}'.format(form.data))
@@ -117,7 +124,8 @@ def subscribe_form():
     if form.validate_on_submit():
         logger.debug('Email: {}'.format(form.email.data))
         logger.debug('Variant: {}'.format(form.chr_pos_ref_alt.data))
-        num_subscribed = subscribe(mongo.db, form.email.data, [form.chr_pos_ref_alt.data])
+        notifier = SubscriptionNotifier(mongo.db)
+        num_subscribed = subscribe(mongo.db, form.email.data, [form.chr_pos_ref_alt.data], notifier=notifier)
         if num_subscribed > 0:
             flash('Success! Subscribed to {} new variants'.format(num_subscribed))
         else:

@@ -4,8 +4,9 @@
 import logging
 import requests
 
-from ..constants import BENIGN, UNCERTAIN, UNKNOWN, PATHOGENIC, DEFAULT_NOTIFICATION_PREFERENCES
+from ..constants import BASE_URL, BENIGN, UNCERTAIN, UNKNOWN, PATHOGENIC, DEFAULT_NOTIFICATION_PREFERENCES
 from ..backend import get_variant_category
+from ..utils import deep_get
 from .mailer import build_mail, send_mail
 
 logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s")
@@ -46,6 +47,60 @@ def render_rating(gold_stars):
 
 
 class Notifier:
+    def notify(self, user, subject, body):
+        # TODO: per-user preference of slack vs. email notification
+        email = user.get('email')
+        slack_url = deep_get(user, 'slack.incoming_webhook.url')
+
+        if email:
+            logger.debug('Sending notification to email: {}'.format(email))
+            mail = build_mail(email, subject, body)
+            response = send_mail(mail)
+            if response.status_code != 202:
+                logger.error('Error sending email ({}): {}'.format(response.status_code, response.body))
+            else:
+                logger.debug('Sent email:\n  to: {}\n  subject: {!r}\n  body: {!r}\n  response: {}'.format(email, subject, body, response.body))
+
+        if slack_url:
+            logger.debug('Posting notification to slack')
+            response = requests.post(slack_url, json={"text": body})
+            if response.status_code != 200:
+                logger.error('Error posting to Slack ({}): {}'.format(response.status_code, response.text))
+            else:
+                logger.debug('Posted to Slack: {}'.format(response.text))
+
+
+class SubscriptionNotifier(Notifier):
+    def __init__(self, db):
+        self.db = db
+
+    def notify_of_subscription(self, user_id, new_subscription_count):
+        user = self.db.users.find_one({ '_id': user_id })
+        token = user['token']
+        email = user.get('email')
+
+        total_subscription_count = self.db.variants.count({ 'subscribers': user_id })
+
+        account_url = '{}/account?t={}'.format(BASE_URL, token)
+
+        # send welcome email
+        if new_subscription_count == 1:
+            subject = "🙌  Subscribed to {} variant".format(new_subscription_count)
+        else:
+            subject = "🙌  Subscribed to {} variants".format(new_subscription_count)
+
+        text = """
+    You subscribed to {} new variants!
+
+    You're now subscribed to a total of {} variants.
+
+    Manage your account here: {}
+    """.format(new_subscription_count, total_subscription_count, account_url)
+
+        self.notify(user, subject, text)
+
+
+class UpdateNotifier(Notifier):
     def __init__(self, db):
         self.notifications = {}  # dict: user_id -> list of notifications
         self.users = {}  # dict: user_id -> user data (memoization)
@@ -74,11 +129,11 @@ class Notifier:
     def notify_of_change(self, old_doc, new_doc):
         old_category = get_variant_category(old_doc)
         new_category = get_variant_category(new_doc)
-        logger.debug('Notifying of change: {}'.format(old_doc['subscribers']))
+        logger.debug('Will notify of change: {}'.format(old_doc['subscribers']))
         for user_id in old_doc['subscribers']:
             user = self._get_user(user_id)
             if self.should_notify_user(user, old_category, new_category):
-                logger.debug('Notifying user ({}) of change to variant: {}'.format(user['email'], new_doc['_id']))
+                logger.info('Will notify user ({}) of change to variant: {}'.format(user['email'], new_doc['_id']))
                 # Add to user's notification queue
                 user_notifications = self.notifications.setdefault(user_id, [])
                 user_notifications.append({
@@ -87,60 +142,49 @@ class Notifier:
                     'old_doc': old_doc,
                     'new_doc': new_doc,
                 })
+            else:
+                logger.info('Skipping notification of user ({}) of change to variant ({}) due to user preferences'.format(user['email'], new_doc['_id']))
 
     def make_notification(self, notification):
-        variant = notification['new_doc']['variant']
-        clinvar = notification['new_doc']['clinvar']['current']
-        old_clinvar = notification['old_doc']['clinvar']['current']
-        variation_id = notification['new_doc']['clinvar']['variation_id']
-        if notification['old_category']:
-            # New classification
-            return """new classification: {}:{} {}>{} ({})
-- {} ({})
-See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/
-""".format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
-           clinvar['clinical_significance'], render_rating(clinvar['gold_stars']),
-           variation_id)
-        else:
+        variant = deep_get(notification, 'new_doc.variant')
+        clinvar = deep_get(notification, 'new_doc.clinvar.current')
+        old_clinvar = deep_get(notification, 'old_doc.clinvar.current')
+        variation_id = deep_get(notification, 'new_doc.clinvar.variation_id')
+        if old_clinvar:
             # Re-classification
             return """classification updated: {}:{} {}>{} ({})
 - new classification: {} ({})
 - previous classification: {} ({})
-See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/
+- See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/
 """.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
            clinvar['clinical_significance'], render_rating(clinvar['gold_stars']),
            old_clinvar['clinical_significance'], render_rating(old_clinvar['gold_stars']),
+           variation_id)
+        else:
+            # New classification
+            return """new classification: {}:{} {}>{} ({})
+- {} ({})
+- See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/
+""".format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
+           clinvar['clinical_significance'], render_rating(clinvar['gold_stars']),
            variation_id)
 
     def send_notifications(self):
         logger.debug('Sending notifications to {} users'.format(len(self.notifications)))
         for user_id, user_notifications in self.notifications.items():
             user = self.users[user_id]
-            email = user.get('email')
-            slack_url = user.get('slack', {}).get('incoming_webhook', {}).get('url')
-            logger.debug('Sending {} notifications to {}'.format(len(user_notifications), email))
+            logger.debug('Sending {} notifications to {}'.format(len(user_notifications), user))
             notification_count = len(user_notifications)
             if notification_count == 1:
                 # Custom subject for this case
-                subject = "🎉  News for your variant: {}".format(user_notifications[0]['new_doc']['_id'])
+                subject = "🎉  News for your variant: {}".format(deep_get(user_notifications[0], 'new_doc._id'))
             else:
                 subject = "🎉  News for {} variants".format(notification_count)
 
             text_parts = []
-            for notification in user_notifications:
-                part = '{}. {}'.format(len(text_parts) + 1, self.make_notification(notification))
+            for i, notification in enumerate(user_notifications):
+                part = '{}. {}'.format(i + 1, self.make_notification(notification))
                 text_parts.append(part)
 
             text = '\n'.join(text_parts)
-
-            if email:
-                mail = build_mail(email, subject, text)
-                send_mail(mail)
-
-            if slack_url:
-                response = requests.post(slack_url, json={"text": text})
-                if response.status_code != 200:
-                    logger.error('Slack posting failed: {}'.format(response))
-                else:
-                    logger.debug('Slack post: {}'.format(response))
-
+            self.notify(user, subject, text)
