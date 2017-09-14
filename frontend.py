@@ -161,6 +161,10 @@ def account():
         for variant in variants['data']:
             v = variant['variant']
             v_id = '-'.join([v['chrom'], v['pos'], v['ref'], v['alt']])
+            if 'tags' in variant and str(user['_id']) in variant['tags']:
+                v_id += ' ({})'.format(variant['tags'][str(user['_id'])])
+            if 'clinvar' in variant:
+                v_id += ' - Current ClinVar status: {}'.format(variant['clinvar'])
             setattr(VariantForm, variant['_id'], BooleanField(v_id))
         variants_form = VariantForm()
     logger.debug('Data: %s', user)
