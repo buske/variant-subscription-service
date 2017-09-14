@@ -278,8 +278,8 @@ class UpdateNotifier(Notifier):
             for i, notification in enumerate(user_notifications):
                 part = '{}. {}'.format(i + 1, self.make_notification(notification))
                 text_parts.append(part)
-                slack_text_parts.append(self.make_slack_notification(notification))
+                slack_text_parts.extend(self.make_slack_notification(notification))
 
             text = '\n'.join(text_parts)
-            self.notify(user, subject, text)
-            self.slack_notify(user, text)
+            # self.notify(user, subject, text)
+            self.slack_notify(user, slack_text_parts)
