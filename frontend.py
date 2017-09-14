@@ -51,7 +51,7 @@ def delete_account(user=None):
     logger.debug('Deleting: %s', user)
     success = delete_account(user)
     if success:
-        flash('Your account has been deleted! Now leave.')
+        flash('Your account has been deleted! Now leave.', category='warning')
     else:
         flash('Error deleting account')
 
@@ -85,7 +85,7 @@ def account(user=None):
         user = authenticate(state)
 
     if not user:
-        flash('Wrong credentials. Please ensure the link is correct, or request a new token')
+        flash('Wrong credentials. Please ensure the link is correct, or request a new token', category='error')
         return redirect(url_for('.login'))
 
     form = PreferencesForm(data=user.get('notification_preferences'))
@@ -112,11 +112,11 @@ def account(user=None):
         logger.debug('Slack auth response: {}'.format(auth_response))
         success = set_user_slack_data(user, auth_response)
         if success:
-            flash('Slack successfully connected!')
+            flash('Slack successfully connected!', category='error')
             # Update current user data to ensure render is up-to-date
             user['slack'] = auth_response
         else:
-            flash('Error connecting slack')
+            flash('Error connecting slack', category='error')
 
     if form.validate_on_submit():
         logger.debug('Setting preferences: {}'.format(form.data))
@@ -141,7 +141,7 @@ def subscribe_form():
         if num_subscribed > 0:
             flash('Success! Subscribed to {} new variants'.format(num_subscribed))
         else:
-            flash('Already subscribed to those variants')
+            flash('Already subscribed to those variants', category='warning')
         return redirect(url_for('.index'))
 
     return render_template('subscribe.html', form=form)
