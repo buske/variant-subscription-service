@@ -24,6 +24,9 @@ class PreferencesForm(FlaskForm):
     vus_to_path = BooleanField('', default=True)
     path_to_path = BooleanField('', default=False)
 
+    notify_emails = BooleanField('Email', default=True)
+    notify_slack = BooleanField('Slack', default=True)
+
     submit = SubmitField(u'Update preferences')
 
 

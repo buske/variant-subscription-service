@@ -76,9 +76,9 @@ def account(user=None):
         flash('Wrong credentials. Please ensure the link is correct, or request a new token')
         return redirect(url_for('.login'))
 
-    form = PreferencesForm(prefix="form", data=user.get('notification_preferences'))
-    remove_slack_form = RemoveSlackForm(prefix="remove_slack_form")
-    delete_form = DeleteForm(prefix="delete_form")
+    form = PreferencesForm(data=user.get('notification_preferences'))
+    remove_slack_form = RemoveSlackForm()
+    delete_form = DeleteForm()
 
     logger.debug('Data: %s', user)
     logger.debug('Payload: %s', request.args)
