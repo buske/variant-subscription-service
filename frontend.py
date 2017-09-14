@@ -138,7 +138,15 @@ def account():
     form = PreferencesForm(data=user.get('notification_preferences'))
     remove_slack_form = RemoveSlackForm()
     delete_form = DeleteForm()
-
+    variants = [user.get('slack')]
+    logger.debug('Variants: %s', variants)
+    if not variants:
+        variants_form = None
+    else:
+        for variant in variants:
+            setattr(VariantForm, variant['team_id'], BooleanField(variant['team_id']))
+        variants_form = VariantForm()
+    # logger.debug('Form: %s', variants_form)
     logger.debug('Data: %s', user)
     logger.debug('Payload: %s', request.args)
     logger.debug('Validated: %s', form.validate_on_submit())
@@ -171,7 +179,8 @@ def account():
         if success:
             flash('Success! Preferences updated.', category='success')
 
-    return render_template('account.html', form=form, user=user, remove_slack_form=remove_slack_form, delete_form=delete_form)
+    return render_template('account.html', form=form, user=user, variants_form=variants_form,
+                           remove_slack_form=remove_slack_form, delete_form=delete_form)
 
 
 @frontend.route('/subscribe/', methods=('GET', 'POST'))
@@ -193,28 +202,6 @@ def subscribe_form():
         return redirect(url_for('.index'))
 
     return render_template('subscribe.html', form=form)
-
-
-# def email_token(email):
-#     return True
-
-
-@frontend.route('/login', methods=('GET', 'POST'))
-def login():
-    form = LoginForm()
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            email_status = email_token(form.email.data)
-            if email_status:
-                flash('Success! Click the link in the email sent to {}'.format(escape(form.email.data)), category='success')
-            else:
-                flash('Error sending email to {}. Please contact the sysadmin'.format(escape(form.email.data)), category='error')
-            return redirect(url_for('.account'))
-    else:
-        if g.get('user'):
-            return redirect(url_for('.account'))
-
-    return render_template('login.html', form=form)
 
 
 @frontend.route('/logout', methods=('GET', 'POST'))

@@ -38,6 +38,10 @@ class DeleteForm(FlaskForm):
     delete = SubmitField(u'Delete your account')
 
 
+class VariantForm(FlaskForm):
+    remove = SubmitField(u'Remove selected variants')
+
+
 class SignupForm(FlaskForm):
     # TODO: normalize as part of validation process
     chr_pos_ref_alt = StringField(u'Chrom-Pos-Ref-Alt', validators=[DataRequired(), Regexp('([1[0-9]|2[0-2]|\d)-\d+-[ATCG]+-[ATCG]+')])
