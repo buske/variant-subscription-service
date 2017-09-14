@@ -24,7 +24,7 @@ logger.setLevel(logging.DEBUG)
 from .forms import *
 from .extensions import mongo, nav
 from .services.notifier import SubscriptionNotifier
-from .backend import authenticate, delete_user, get_stats, remove_user_slack_data, subscribe, set_user_slack_data, set_preferences
+from .backend import authenticate, delete_user, get_stats, remove_user_slack_data, subscribe, set_user_slack_data, set_preferences, get_user_subscribed_variants
 
 frontend = Blueprint('frontend', __name__)
 
@@ -148,7 +148,6 @@ def account():
         for variant in variants['data']:
             setattr(VariantForm, variant['team_id'], BooleanField(variant['team_id']))
         variants_form = VariantForm()
-    # logger.debug('Form: %s', variants_form)
     logger.debug('Data: %s', user)
     logger.debug('Payload: %s', request.args)
     logger.debug('Validated: %s', form.validate_on_submit())
