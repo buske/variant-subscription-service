@@ -243,14 +243,15 @@ class UpdateNotifier(Notifier):
             data.append({
                 'title': 'Classification updated',
                 'value': '{}:{} {}>{} ({})\n{} {} :arrow_right: {} {}\nSee ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
-                                                                                                                                                                    old_clinvar['clinical_significance'], [':star:'] * old_stars,
-                                                                                                                                                                    clinvar['clinical_significance'], [':star:'] * new_stars, variation_id),
+                                                                                                                                                                    old_clinvar['clinical_significance'], ''.join([':star:'] * old_stars),
+                                                                                                                                                                    clinvar['clinical_significance'], ''.join([':star:'] * new_stars), variation_id),
                 'short': False
             })
         else:
             data.append({
                 'title': 'New classification',
-                'value': '{}:{} {}>{} ({})\n{} {}\nSee ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'], clinvar['clinical_significance'], new_stars, variation_id),
+                'value': '{}:{} {}>{} ({})\n{} {}\nSee ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'], clinvar['clinical_significance'],
+                                                                                                                                                ''.join([':star:'] * new_stars), variation_id),
                 'short': False
             })
         return data
