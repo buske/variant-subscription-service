@@ -19,14 +19,14 @@
         {% endif %}
         <div class="row">
             <div class="col-md-6">
-            <form method="post">
-                {{ form.hidden_tag() }}
-                <h4>Notification type</h4>
-                <p>
-                    Email {{ form.notify_emails }}
-                    Slack {{ form.notify_slack(disabled=not user.slack) }}
-                </p>
-                <h4>Transitions - <a id="select_all" onclick="select_options(true)">Select All</a> - <a id="select_none" onclick="select_options(false)">Select None</a><br/></h4>
+                <form method="post">
+                    {{ form.hidden_tag() }}
+                    <h4>Notification type</h4>
+                    <p>
+                        Email {{ form.notify_emails }}
+                        Slack {{ form.notify_slack(disabled=not user.slack) }}
+                    </p>
+                    <h4>Transitions - <a id="select_all" onclick="select_options(true)">Select All</a> - <a id="select_none" onclick="select_options(false)">Select None</a><br/></h4>
                         <table id="option_table" class="table table-bordered">
                             <tr>
                                 <th>From <span class="glyphicon glyphicon-arrow-down" aria-hidden="true"></span></th>
