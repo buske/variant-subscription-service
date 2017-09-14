@@ -146,7 +146,9 @@ def account():
     else:
         num_variants = variants['total']
         for variant in variants['data']:
-            setattr(VariantForm, variant['team_id'], BooleanField(variant['team_id']))
+            v = variant['variant']
+            v_id = '-'.join([v['chrom'], v['pos'], v['ref'], v['alt']])
+            setattr(VariantForm, variant['_id'], BooleanField(v_id))
         variants_form = VariantForm()
     logger.debug('Data: %s', user)
     logger.debug('Payload: %s', request.args)
@@ -180,7 +182,7 @@ def account():
         if success:
             flash('Success! Preferences updated.', category='success')
 
-    return render_template('account.html', form=form, user=user, variants_form=variants_form,
+    return render_template('account.html', form=form, user=user, variants_form=variants_form, num_variants=num_variants,
                            remove_slack_form=remove_slack_form, delete_form=delete_form)
 
 
