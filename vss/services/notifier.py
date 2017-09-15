@@ -4,10 +4,10 @@
 import logging
 import requests
 
-from ..constants import BASE_URL, BENIGN, UNCERTAIN, UNKNOWN, PATHOGENIC, DEFAULT_NOTIFICATION_PREFERENCES
+from ..constants import BENIGN, UNCERTAIN, UNKNOWN, PATHOGENIC, DEFAULT_NOTIFICATION_PREFERENCES
 from ..backend import get_variant_category
 from ..utils import deep_get
-from .mailer import build_mail, send_mail
+from .mailer import Mailer
 
 logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s")
 logger = logging.getLogger(__name__)
@@ -34,7 +34,6 @@ NOTIFICATION_PREFERENCE_MAP = {
     },
 }
 
-
 def render_rating(gold_stars, unicode_emoji=False, max_stars=4):
     try:
         stars = int(gold_stars)
@@ -59,22 +58,26 @@ def render_rating_slack(gold_stars):
 
 
 class Notifier:
+    def __init__(self, config):
+        self.config = config
+
     def notify(self, user, subject, body, force_email=True):
         # force_email is used for overriding the user preferences to receive email
         email = user.get('email')
 
         # Take into account user notification preferences
         can_email_user = email and (force_email or deep_get(user, 'notification_preferences.notify_emails', DEFAULT_NOTIFICATION_PREFERENCES['notify_emails']))
-        logger.debug('Notifications for user {}: email={}'.format(email, can_email_user))
+        logger.debug('Notifications for user {!r}: email={!r}'.format(email, can_email_user))
 
         if can_email_user:
-            logger.debug('Sending notification to email: {}'.format(email))
-            mail = build_mail(email, subject, body)
-            response = send_mail(mail)
+            logger.debug('Sending notification to email: {!r}'.format(email))
+            mailer = Mailer(self.config)
+            mail = mailer.build(email, subject, body)
+            response = mailer.send(mail)
             if response.status_code != 202:
-                logger.error('Error sending email ({}): {}'.format(response.status_code, response.body))
+                logger.error('Error sending email ({!r}): {!r}'.format(response.status_code, response.body))
             else:
-                logger.debug('Sent email:\n  to: {}\n  subject: {!r}\n  body: {!r}\n  response: {}'.format(email, subject, body, response.body))
+                logger.debug('Sent email:\n  to: {!r}\n  subject: {!r}\n  body: {!r}\n  response: {!r}'.format(email, subject, body, response.body))
 
     def slack_notify(self, user, data):
         email = user.get('email')
@@ -100,20 +103,22 @@ class Notifier:
         }
         # Take into account user notification preferences
         can_slack_user = slack_url and deep_get(user, 'notification_preferences.notify_slack', DEFAULT_NOTIFICATION_PREFERENCES['notify_slack'])
-        logger.debug('Notifications for user {}: slack={}'.format(email, can_slack_user))
+        logger.debug('Notifications for user {!r}: slack={!r}'.format(email, can_slack_user))
 
         if can_slack_user:
             logger.debug('Posting notification to slack')
             response = requests.post(slack_url, json=json)
             if response.status_code != 200:
-                logger.error('Error posting to Slack ({}): {}'.format(response.status_code, response.text))
+                logger.error('Error posting to Slack ({!r}): {!r}'.format(response.status_code, response.text))
             else:
-                logger.debug('Posted to Slack: {}'.format(response.text))
+                logger.debug('Posted to Slack: {!r}'.format(response.text))
 
 
 class ResendTokenNotifier(Notifier):
-    def __init__(self, db):
+    def __init__(self, db, config):
+        super().__init__(config)
         self.db = db
+        self.config = config
 
     def resend_token(self, email):
         user = None
@@ -121,13 +126,14 @@ class ResendTokenNotifier(Notifier):
             user = self.db.users.find_one({ 'email': email })
 
         if user:
-            logger.debug('Resending token to: {}'.format(email))
+            logger.debug('Resending token to: {!r}'.format(email))
             token = user['token']
 
-            account_url = '{}/account/?t={}'.format(BASE_URL, token)
+            account_url = '{}/account/?t={}'.format(self.config['BASE_URL'], token)
 
             subject = '🚀  Your login link for Variant Facts'
-            body = """
+            body = """Thanks for subscribing to Variant Facts!
+
 Here is a link to manage your subscriptions: {}
 
 This link gives full access to your account, so keep it private.
@@ -138,8 +144,10 @@ This link gives full access to your account, so keep it private.
 
 
 class SubscriptionNotifier(Notifier):
-    def __init__(self, db):
+    def __init__(self, db, config):
+        super().__init__(config)
         self.db = db
+        self.config = config
 
     def notify_of_subscription(self, user_id, new_subscription_count):
         user = self.db.users.find_one({ '_id': user_id })
@@ -148,7 +156,7 @@ class SubscriptionNotifier(Notifier):
 
         total_subscription_count = self.db.variants.count({ 'subscribers': user_id })
 
-        account_url = '{}/account/?t={}'.format(BASE_URL, token)
+        account_url = '{}/account/?t={}'.format(self.config['BASE_URL'], token)
 
         s_new = 's' if new_subscription_count > 1 else ''
         s_total = 's' if total_subscription_count > 1 else ''
@@ -168,10 +176,12 @@ This link gives full access to your account, so keep it private.
 
 
 class UpdateNotifier(Notifier):
-    def __init__(self, db):
+    def __init__(self, db, config):
+        super().__init__(config)
         self.notifications = {}  # dict: user_id -> list of notifications
         self.users = {}  # dict: user_id -> user data (memoization)
         self.db = db
+        self.config = config
 
     def _get_user(self, user_id):
         # Get user data, memoized with self.users
@@ -196,11 +206,11 @@ class UpdateNotifier(Notifier):
     def notify_of_change(self, old_doc, new_doc):
         old_category = get_variant_category(old_doc)
         new_category = get_variant_category(new_doc)
-        logger.debug('Will notify of change: {}'.format(old_doc['subscribers']))
+        logger.debug('Will notify of change: {!r}'.format(old_doc['subscribers']))
         for user_id in old_doc['subscribers']:
             user = self._get_user(user_id)
             if self.should_notify_user(user, old_category, new_category):
-                logger.info('Will notify user ({}) of change to variant: {}'.format(user['email'], new_doc['_id']))
+                logger.info('Will notify user ({!r}) of change to variant: {!r}'.format(user['email'], new_doc['_id']))
                 # Add to user's notification queue
                 user_notifications = self.notifications.setdefault(user_id, [])
                 user_notifications.append({
@@ -210,7 +220,7 @@ class UpdateNotifier(Notifier):
                     'new_doc': new_doc,
                 })
             else:
-                logger.info('Skipping notification of user ({}) of change to variant ({}) due to user preferences'.format(user['email'], new_doc['_id']))
+                logger.info('Skipping notification of user ({!r}) of change to variant ({!r}) due to user preferences'.format(user['email'], new_doc['_id']))
 
     def make_notification(self, notification):
         variant = deep_get(notification, 'new_doc.variant')
@@ -262,14 +272,13 @@ class UpdateNotifier(Notifier):
                     clinvar['clinical_significance'], render_rating(clinvar['gold_stars'], True), variation_id),
                 'short': False
             })
-        logger.debug('DATA: {}'.format(data))
         return data
 
     def send_notifications(self):
-        logger.debug('Sending notifications to {} users'.format(len(self.notifications)))
+        logger.debug('Sending notifications to {!r} users'.format(len(self.notifications)))
         for user_id, user_notifications in self.notifications.items():
             user = self.users[user_id]
-            logger.debug('Sending {} notifications to {}'.format(len(user_notifications), user))
+            logger.debug('Sending {!r} notifications to {!r}'.format(len(user_notifications), user))
             notification_count = len(user_notifications)
             if notification_count == 1:
                 # Custom subject for this case
@@ -285,6 +294,6 @@ class UpdateNotifier(Notifier):
                 slack_text_parts.extend(self.make_slack_notification(notification))
 
             text = '\n'.join(text_parts)
-            logger.debug('Email text below\n%s', text)
+            logger.debug('Email text below:\n{!r}'.format(text))
             self.notify(user, subject, text)
             self.slack_notify(user, slack_text_parts)

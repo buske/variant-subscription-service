@@ -4,8 +4,9 @@ import logging
 
 from csv import DictReader
 
-from . import connect_db
+from . import app, connect_db
 from ..constants import DEFAULT_GENOME_BUILD, BENIGN, UNCERTAIN, UNKNOWN, PATHOGENIC
+from ..extensions import mongo
 from ..backend import build_variant_doc, get_variant_category
 from ..services.notifier import UpdateNotifier
 
@@ -88,7 +89,7 @@ def iter_variant_updates(db, variants):
 
 def main(clinvar_filename):
     db = connect_db()
-    notifier = UpdateNotifier(db)
+    notifier = UpdateNotifier(db, app.config)
 
     variant_iterator = iter_variants(clinvar_filename)
     for (old_doc, new_doc) in iter_variant_updates(db, variant_iterator):

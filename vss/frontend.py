@@ -56,6 +56,9 @@ def do_login(token):
             session['token'] = token
             g.user = user
             return user
+        else:
+            session['token'] = ''
+            g.user = None
 
 
 # If there is a session cookie with the token, resolve to a user object
@@ -255,7 +258,7 @@ def subscribe_form():
         logger.debug('Email: {}'.format(form.email.data))
         logger.debug('Variant: {}'.format(form.chr_pos_ref_alt.data))
         logger.debug('Tag: {}'.format(form.tag.data))
-        notifier = SubscriptionNotifier(mongo.db)
+        notifier = SubscriptionNotifier(mongo.db, current_app.config)
         num_subscribed = subscribe(mongo.db, form.email.data, [form.chr_pos_ref_alt.data], tag=form.tag.data, notifier=notifier)
         if num_subscribed > 0:
             flash('Subscribed to {} new variants'.format(num_subscribed), category='success')
@@ -272,7 +275,7 @@ def login():
     if request.method == 'POST':
         if form.validate_on_submit():
             email = form.email.data
-            notifier = ResendTokenNotifier(mongo.db)
+            notifier = ResendTokenNotifier(mongo.db, current_app.config)
             success = notifier.resend_token(email)
             if success:
                 flash('Sent! Please check your email for a login link', category='success')

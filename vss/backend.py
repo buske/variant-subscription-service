@@ -10,7 +10,6 @@ from pymongo import ASCENDING
 
 from .constants import DEFAULT_GENOME_BUILD, DEFAULT_NOTIFICATION_PREFERENCES, UNKNOWN
 from .extensions import mongo
-from .services.mailer import build_mail, send_mail
 from .clinvar import parse_clinvar_category
 from .utils import deep_get
 
