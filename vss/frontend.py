@@ -13,8 +13,7 @@ import logging
 
 from functools import wraps
 from flask import Blueprint, render_template, flash, redirect, url_for, request, session, g
-from flask_nav.elements import Navbar, View, Subgroup, Link, Text, Separator
-from markupsafe import escape
+from flask_nav.elements import Navbar, View
 from slackclient import SlackClient
 
 logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s")

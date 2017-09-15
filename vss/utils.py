@@ -1,5 +1,6 @@
 def deep_get(obj, path, default=None):
-    """Get a deeply nested path, with fallback if it can't be found
+    """
+    Get a deeply nested path, with fallback if it can't be found
 
     >>> deep_get({'a': {'b': 5}}, 'a.b')
     5

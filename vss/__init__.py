@@ -7,6 +7,7 @@ from .backend import backend
 from .frontend import frontend
 from .extensions import mongo, nav
 
+
 def create_app():
     app = Flask('vss', instance_relative_config=True)
 
@@ -18,9 +19,11 @@ def create_app():
 
     return app
 
+
 def register_blueprints(app):
     app.register_blueprint(frontend)
     app.register_blueprint(backend)
+
 
 def register_extensions(app):
     Bootstrap(app)

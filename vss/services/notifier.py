@@ -245,16 +245,20 @@ class UpdateNotifier(Notifier):
             # Re-classification
             data.append({
                 'title': 'Classification updated',
-                'value': '{}:{} {}>{} ({})\n{} {} → {} {}\nSee ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
-                                                                                                                                                                    old_clinvar['clinical_significance'], render_rating(old_clinvar['gold_stars'], True),
-                                                                                                                                                                    clinvar['clinical_significance'], render_rating(clinvar['gold_stars'], True), variation_id),
+                'value': '{}:{} {}>{} ({})\n{} {} → {} {}\n'
+                         'See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(
+                    variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
+                    old_clinvar['clinical_significance'], render_rating(old_clinvar['gold_stars'], True),
+                    clinvar['clinical_significance'], render_rating(clinvar['gold_stars'], True), variation_id),
                 'short': False
             })
         else:
             data.append({
                 'title': 'New classification',
-                'value': '{}:{} {}>{} ({})\n{} {}\nSee ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'], clinvar['clinical_significance'],
-                                                                                                                                                render_rating(clinvar['gold_stars'], True), variation_id),
+                'value': '{}:{} {}>{} ({})\n{} {}\n'
+                         'See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(
+                    variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'], clinvar['clinical_significance'],
+                    render_rating(clinvar['gold_stars'], True), variation_id),
                 'short': False
             })
         logger.debug('DATA: {}'.format(data))
@@ -280,5 +284,5 @@ class UpdateNotifier(Notifier):
                 slack_text_parts.extend(self.make_slack_notification(notification))
 
             text = '\n'.join(text_parts)
-            # self.notify(user, subject, text)
+            self.notify(user, subject, text)
             self.slack_notify(user, slack_text_parts)
