@@ -48,7 +48,7 @@ class VariantForm(FlaskForm):
 
 class SignupForm(FlaskForm):
     # TODO: normalize as part of validation process
-    chr_pos_ref_alt = StringField(u'Chrom-Pos-Ref-Alt', validators=[DataRequired(), Regexp('([1[0-9]|2[0-2]|\d)-\d+-[ATCG]+-[ATCG]+')])
+    chr_pos_ref_alt = StringField(u'Chrom-Pos-Ref-Alt', validators=[DataRequired(), Regexp('(1[0-9]|2[0-2]|\d)-\d+-[ATCG]+-[ATCG]+')])
     tag = StringField(u'Tag this variant with a description (optional; please do not use patient information)')
     email = StringField(u'Email address', validators=[Email(), DataRequired()])
 
