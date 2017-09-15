@@ -128,7 +128,7 @@ class ResendTokenNotifier(Notifier):
 
             subject = '🚀  Your login link for Variant Facts'
             body = """
-Here is a link to manage your account: {}
+Here is a link to manage your subscriptions: {}
 
 This link gives full access to your account, so keep it private.
 """.format(account_url)
@@ -155,11 +155,11 @@ class SubscriptionNotifier(Notifier):
         # send welcome email
         subject = "🙌  Subscribed to {} variant{}".format(new_subscription_count, s_new)
 
-        text = """You subscribed to Variant Facts!
+        text = """Thanks for subscribing to Variant Facts!
 
 You've added {} variant{} for a total of {} variant{}.
 
-Manage your account here: {}
+Manage your subscriptions here: {}
     """.format(new_subscription_count, s_new, total_subscription_count, s_total, account_url)
 
         self.notify(user, subject, text)
