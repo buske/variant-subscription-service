@@ -160,6 +160,8 @@ class SubscriptionNotifier(Notifier):
 You've added {} variant{} for a total of {} variant{}.
 
 Manage your subscriptions here: {}
+
+This link gives full access to your account, so keep it private.
     """.format(new_subscription_count, s_new, total_subscription_count, s_total, account_url)
 
         self.notify(user, subject, text)

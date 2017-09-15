@@ -12,7 +12,7 @@ import os
 import logging
 
 from functools import wraps
-from flask import Blueprint, render_template, flash, redirect, url_for, request, session, g
+from flask import Blueprint, render_template, flash, redirect, url_for, request, session, g, current_app
 from flask_nav.elements import Navbar, View
 from slackclient import SlackClient
 
@@ -199,6 +199,9 @@ def account():
     silence_form = SilenceForm()
     variants_form = create_variants_form(user)
 
+    slack_client_id = current_app.config.get('SLACK_CLIENT_ID', '')
+    slack_client_secret = current_app.config.get('SLACK_CLIENT_SECRET', '')
+    logger.debug('Slack client ID: {}'.format(slack_client_id))
     logger.debug('Data: %s', user)
     logger.debug('Payload: %s', request.args)
     logger.debug('Validated: %s', form.validate_on_submit())
@@ -212,8 +215,8 @@ def account():
         # Request the auth tokens from Slack
         auth_response = sc.api_call(
             "oauth.access",
-            client_id=os.environ.get('SLACK_CLIENT_ID', ''),
-            client_secret=os.environ.get('SLACK_CLIENT_SECRET', ''),
+            client_id=slack_client_id,
+            client_secret=slack_client_secret,
             code=slack_code
         )
         logger.debug('Slack auth response: {}'.format(auth_response))
