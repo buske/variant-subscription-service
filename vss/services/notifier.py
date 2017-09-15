@@ -150,18 +150,17 @@ class SubscriptionNotifier(Notifier):
 
         account_url = '{}/account/?t={}'.format(BASE_URL, token)
 
+        s_new = 's' if new_subscription_count > 1 else ''
+        s_total = 's' if total_subscription_count > 1 else ''
         # send welcome email
-        if new_subscription_count == 1:
-            subject = "🙌  Subscribed to {} variant".format(new_subscription_count)
-        else:
-            subject = "🙌  Subscribed to {} variants".format(new_subscription_count)
+        subject = "🙌  Subscribed to {} variant{}".format(new_subscription_count, s_new)
 
-        text = """You subscribed to {} new variants!
+        text = """You subscribed to Variant Facts!
 
-You're now subscribed to a total of {} variants.
+You've added {} variant{} for a total of {} variant{}.
 
 Manage your account here: {}
-    """.format(new_subscription_count, total_subscription_count, account_url)
+    """.format(new_subscription_count, s_new, total_subscription_count, s_total, account_url)
 
         self.notify(user, subject, text)
 
@@ -257,8 +256,8 @@ class UpdateNotifier(Notifier):
                 'title': 'New classification',
                 'value': '{}:{} {}>{} ({})\n{} {}\n'
                          'See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(
-                    variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'], clinvar['clinical_significance'],
-                    render_rating(clinvar['gold_stars'], True), variation_id),
+                    variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
+                    clinvar['clinical_significance'], render_rating(clinvar['gold_stars'], True), variation_id),
                 'short': False
             })
         logger.debug('DATA: {}'.format(data))
@@ -284,5 +283,6 @@ class UpdateNotifier(Notifier):
                 slack_text_parts.extend(self.make_slack_notification(notification))
 
             text = '\n'.join(text_parts)
+            logger.debug('Email text below\n%s', text)
             self.notify(user, subject, text)
             self.slack_notify(user, slack_text_parts)
