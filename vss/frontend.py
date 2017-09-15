@@ -239,7 +239,12 @@ def account():
 
 @frontend.route('/subscribe/', methods=('GET', 'POST'))
 def subscribe_form():
-    form = SignupForm()
+    email = ''
+    user = g.get('user')
+    if user:
+        email = user.get('email')
+
+    form = SignupForm(data={'email': email})
 
     logger.debug('Validated: %s', form.validate_on_submit())
     logger.debug('Errors: %s', form.errors)
