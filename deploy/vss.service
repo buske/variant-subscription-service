@@ -8,7 +8,7 @@ Group=www-data
 WorkingDirectory=/var/www/vss
 Environment="PATH=/var/www/vss/.virtualenv/bin"
 Environment="VSS_SETTINGS=/var/www/vss/production.cfg"
-ExecStart=/var/www/vss/.virtualenv/bin/uwsgi --ini vss.ini
+ExecStart=/var/www/vss/.virtualenv/bin/uwsgi --ini vss.ini --touch-reload wsgi.py
 
 [Install]
 WantedBy=multi-user.target
