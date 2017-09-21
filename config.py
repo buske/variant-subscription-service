@@ -1,3 +1,6 @@
+APP_NAME = 'Variant Facts'
+APP_NAME_SHORT = 'VF'
+
 MONGO_DBNAME = 'vss'
 MONGO_PORT = '27017'
 

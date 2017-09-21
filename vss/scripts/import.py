@@ -3,6 +3,8 @@ import gzip
 import logging
 
 from csv import DictReader
+from pymongo import InsertOne, ReplaceOne
+from datetime import datetime
 
 from . import app, connect_db
 from ..constants import DEFAULT_GENOME_BUILD, BENIGN, UNCERTAIN, UNKNOWN, PATHOGENIC
@@ -44,15 +46,12 @@ def merge_docs(old_doc, new_doc):
 def update_variant(db, existing_doc, updated_doc):
     doc_id = existing_doc['_id']
     merged_doc = merge_docs(existing_doc, updated_doc)
-    logger.debug('Updating variant: {} -> {}'.format(existing_doc, merged_doc))
-    db.variants.find_one_and_replace({ '_id': doc_id }, merged_doc)
-    return merged_doc
+    logger.debug('Updating variant: {}, {} -> {}'.format(doc_id, get_variant_category(existing_doc), get_variant_category(merged_doc)))
+    return merged_doc, ReplaceOne({ '_id': doc_id }, merged_doc)
 
 
 def create_variant(db, doc):
-    result = db.variants.insert_one(doc)
-    # logger.debug('Creating variant, result: {}'.format(result.inserted_id))
-    return doc
+    return InsertOne(doc)
 
 
 def iter_variants(filename):
@@ -65,16 +64,6 @@ def did_variant_category_change(old_doc, new_doc):
     old_category = get_variant_category(old_doc)
     new_category = get_variant_category(new_doc)
     return old_category != new_category
-
-
-def parse_args():
-    import argparse
-
-    parser = argparse.ArgumentParser(description='Update ClinVar data')
-    parser.add_argument('clinvar_filename', metavar='CLINVAR_ALLELES_TSV_GZ', type=str,
-                        help='clinvar_alleles.single.b*.tsv.gz from github.com/macarthur-lab/clinvar pipeline')
-
-    return parser.parse_args()
 
 
 def iter_variant_updates(db, variants):
@@ -90,23 +79,59 @@ def iter_variant_updates(db, variants):
 def main(clinvar_filename):
     db = connect_db()
     notifier = UpdateNotifier(db, app.config)
+    started_at = datetime.utcnow()
 
+    db_update_queue = []
+    notification_queue = []
     variant_iterator = iter_variants(clinvar_filename)
-    for (old_doc, new_doc) in iter_variant_updates(db, variant_iterator):
+    for i, (old_doc, new_doc) in enumerate(iter_variant_updates(db, variant_iterator)):
+        if i % 10000 == 0:
+            logger.debug('Processed {} variants'.format(i))
+
         if old_doc:
             # Variant is already known, either:
             # - someone subscribed before it was added to clinvar, or
             # - it was already in clinvar, and we might have new annotations
-            updated_doc = update_variant(db, old_doc, new_doc)
+            updated_doc, db_update = update_variant(db, old_doc, new_doc)
+            if old_doc['subscribers']:
+                logger.info('Will notify subscribers: {}'.format(updated_doc['subscribers']))
+                notification_queue.append((old_doc, updated_doc))
+
         else:
             # Add clinvar annotations with empty subscriber data
-            updated_doc = create_variant(db, new_doc)
+            db_update = create_variant(db, new_doc)
 
-        if updated_doc['subscribers']:
-            logger.debug('Notifying subscribers: {}'.format(updated_doc['subscribers']))
-            notifier.notify_of_change(old_doc, updated_doc)
+        db_update_queue.append(db_update)
 
-    notifier.send_notifications()
+    if db_update_queue:
+        logger.info('Updating {} variants'.format(len(db_update_queue)))
+        result = db.variants.bulk_write(db_update_queue, ordered=False)
+        logger.info('Inserted {} variants and updated status of {}'.format(result.inserted_count, result.modified_count))
+
+    if notification_queue:
+        for old_doc, new_doc in notification_queue:
+            notifier.notify_of_change(old_doc, new_doc)
+
+        logger.info('Notifying of changes to {} variants'.format(len(notification_queue)))
+        notifier.send_notifications()
+
+    db.updates.insert_one({
+        'started_at': started_at,
+        'finished_at': datetime.utcnow(),
+        'inserted_count': result.inserted_count,
+        'modified_count': result.modified_count,
+        'notified_count': len(notification_queue),
+    })
+
+
+def parse_args():
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Update ClinVar data')
+    parser.add_argument('clinvar_filename', metavar='CLINVAR_ALLELES_TSV_GZ', type=str,
+                        help='clinvar_alleles.single.b*.tsv.gz from github.com/macarthur-lab/clinvar pipeline')
+
+    return parser.parse_args()
 
 
 if __name__ == '__main__':

@@ -209,8 +209,11 @@ def get_stats():
     db = mongo.db
     # Get number of variants with subscribers
     subscribed_variants = db.variants.count({ 'subscribers': { '$exists': True, '$ne': [] } })
+    last_updated_doc = db.updates.find_one({}, sort=[('finished_at', ASCENDING)])
+    last_updated = last_updated_doc.get('finished_at') if last_updated_doc else None
     return {
         'subscribed_variants': subscribed_variants,
+        'last_updated': last_updated,
     }
 
 

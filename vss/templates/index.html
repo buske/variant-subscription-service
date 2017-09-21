@@ -3,13 +3,27 @@
 
 {% block inner_content %}
     <div class="container">
-        <div class="jumbotron">
-            <h1>Welcome to Variant Facts</h1>
+        <div class="jumbotron text-center">
+            <h1>Welcome to {{config.APP_NAME}}</h1>
             <p>Join the millions of people who have subscribed to Clinvar updates for their favorite variants.</p>
+            <a class="btn btn-primary btn-lg" href="/subscribe" role="button">Subscribe to a variant</a>
         </div>
         <div class="row">
-            <div class="col-lg-6">
-            {{ stats.subscribed_variants }} variants being tracked so far!
+            <div class="col-sm-6">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 class="card-title h1">{{ stats.subscribed_variants }}</h2>
+                        <p class="card-text">variants being tracked</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 class="card-title h1">{{ stats.last_updated.strftime('%Y-%m-%d') }}</h2>
+                        <p class="card-text">last updated</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

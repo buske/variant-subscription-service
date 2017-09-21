@@ -1,6 +1,6 @@
 {%- extends "bootstrap/base.html" %}
 
-{% block title %}Variant Facts{% endblock %}
+{% block title %}{{config.APP_NAME}}{% endblock %}
 
 {% import "bootstrap/fixes.html" as fixes %}
 
@@ -34,7 +34,7 @@
 	{% block footer -%}
 	<footer class="footer">
 	    <div class="container">
-	        <p class="text-muted">Made at <a href="http://2017.biohackathon.org" target="_blank">BioHackathon 2017</a></p>
+	        <p class="text-muted">Made at <a href="http://2017.biohackathon.org" target="_blank">BioHackathon 2017</a> by <a href="https://twitter.com/konradjk">@konradjk</a> and <a href="https://twitter.com/orionbuske">@orionbuske</a></p>
 	    </div>
 	</footer>
 	{%- endblock footer %}

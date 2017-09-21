@@ -31,7 +31,7 @@ frontend = Blueprint('frontend', __name__)
 
 def top_nav():
     navbar_items = [
-        View('VSS', '.index'),
+        View(current_app.config.get('APP_NAME', 'VSS'), '.index'),
         View('Home', '.index'),
         View('About', '.about'),
         View('Subscribe', '.subscribe_form'),
@@ -42,7 +42,9 @@ def top_nav():
             View('Logout', '.logout')
         ])
     else:
-        navbar_items.append(View('Login', '.login'))
+        navbar_items.extend([
+            View('Login', '.login')
+        ])
     return Navbar(*navbar_items)
 
 nav.register_element('frontend_top', top_nav)
@@ -183,7 +185,7 @@ def create_variants_form(user):
                     stars = int(gold_stars)
                 except:
                     stars = 0
-                v_id += ' - ClinVar: {} {}'.format(category, ' '.join(['⭐'] * stars))
+                v_id += ': {} {}'.format(category, ' '.join(['⭐'] * stars))
 
             setattr(CustomVariantForm, variant['_id'], BooleanField(v_id))
 
