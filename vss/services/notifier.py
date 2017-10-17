@@ -56,6 +56,14 @@ def render_rating_slack(gold_stars):
         stars = 0
 
 
+def variant_to_string(user, doc):
+    tag = doc['tags'].get(str(user['_id']), '')
+    variant = doc['variant']
+    if tag:
+        return '{}:{} {}>{} ({})'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], tag)
+    else:
+        return '{}:{} {}>{}'.format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'])
+
 
 class Notifier:
     def __init__(self, config):
@@ -130,7 +138,7 @@ class ResendTokenNotifier(Notifier):
             token = user['token']
 
             account_url = '{}/account/?t={}'.format(self.config['BASE_URL'], token)
-
+            logger.debug('Login url: {}'.format(account_url))
             subject = '🚀  Your login link for Variant Facts'
             body = """Thanks for subscribing to Variant Facts!
 
@@ -210,7 +218,7 @@ class UpdateNotifier(Notifier):
         for user_id in old_doc['subscribers']:
             user = self._get_user(user_id)
             if self.should_notify_user(user, old_category, new_category):
-                logger.info('Will notify user ({!r}) of change to variant: {!r}'.format(user['email'], new_doc['_id']))
+                logger.info('Will notify user ({!r}) of change to variant: {!r}'.format(user['email'], variant_to_string(user, new_doc)))
                 # Add to user's notification queue
                 user_notifications = self.notifications.setdefault(user_id, [])
                 user_notifications.append({
@@ -222,43 +230,45 @@ class UpdateNotifier(Notifier):
             else:
                 logger.info('Skipping notification of user ({!r}) of change to variant ({!r}) due to user preferences'.format(user['email'], new_doc['_id']))
 
-    def make_notification(self, notification):
+    def make_notification(self, user, notification):
         variant = deep_get(notification, 'new_doc.variant')
         clinvar = deep_get(notification, 'new_doc.clinvar.current')
         old_clinvar = deep_get(notification, 'old_doc.clinvar.current')
         variation_id = deep_get(notification, 'new_doc.clinvar.variation_id')
+        variant_string = variant_to_string(user, notification['new_doc'])
         if old_clinvar:
             # Re-classification
-            return """classification updated: {}:{} {}>{} ({})
+            return """classification updated: {}
   - new classification: {} ({})
   - previous classification: {} ({})
   - See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/
-""".format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
+""".format(variant_string,
            clinvar['clinical_significance'], render_rating(clinvar['gold_stars']),
            old_clinvar['clinical_significance'], render_rating(old_clinvar['gold_stars']),
            variation_id)
         else:
             # New classification
-            return """new classification: {}:{} {}>{} ({})
+            return """new classification: {}
   - {} ({})
   - See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/
-""".format(variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
+""".format(variant_string,
            clinvar['clinical_significance'], render_rating(clinvar['gold_stars']),
            variation_id)
 
-    def make_slack_notification(self, notification):
+    def make_slack_notification(self, user, notification):
         variant = deep_get(notification, 'new_doc.variant')
         clinvar = deep_get(notification, 'new_doc.clinvar.current')
         old_clinvar = deep_get(notification, 'old_doc.clinvar.current')
         variation_id = deep_get(notification, 'new_doc.clinvar.variation_id')
+        variant_string = variant_to_string(user, notification['new_doc'])
         data = []
         if old_clinvar:
             # Re-classification
             data.append({
                 'title': 'Classification updated',
-                'value': '{}:{} {}>{} ({})\n{} {} → {} {}\n'
+                'value': '{}\n{} {} → {} {}\n'
                          'See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(
-                    variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
+                    variant_string,
                     old_clinvar['clinical_significance'], render_rating(old_clinvar['gold_stars'], True),
                     clinvar['clinical_significance'], render_rating(clinvar['gold_stars'], True), variation_id),
                 'short': False
@@ -266,9 +276,9 @@ class UpdateNotifier(Notifier):
         else:
             data.append({
                 'title': 'New classification',
-                'value': '{}:{} {}>{} ({})\n{} {}\n'
+                'value': '{}\n{} {}\n'
                          'See ClinVar for more information: https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/'.format(
-                    variant['chrom'], variant['pos'], variant['ref'], variant['alt'], variant['build'],
+                    variant_string,
                     clinvar['clinical_significance'], render_rating(clinvar['gold_stars'], True), variation_id),
                 'short': False
             })
@@ -282,16 +292,17 @@ class UpdateNotifier(Notifier):
             notification_count = len(user_notifications)
             if notification_count == 1:
                 # Custom subject for this case
-                subject = "🎉  News for your variant: {}".format(deep_get(user_notifications[0], 'new_doc._id'))
+                variant_string = variant_to_string(user, user_notifications[0]['new_doc'])
+                subject = "🎉  News for your variant: {}".format(variant_string)
             else:
                 subject = "🎉  News for {} variants".format(notification_count)
 
             text_parts = []
             slack_text_parts = []
             for i, notification in enumerate(user_notifications):
-                part = '{}. {}'.format(i + 1, self.make_notification(notification))
+                part = '{}. {}'.format(i + 1, self.make_notification(user, notification))
                 text_parts.append(part)
-                slack_text_parts.extend(self.make_slack_notification(notification))
+                slack_text_parts.extend(self.make_slack_notification(user, notification))
 
             text = '\n'.join(text_parts)
             logger.debug('Email text below:\n{!r}'.format(text))

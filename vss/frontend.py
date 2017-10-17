@@ -16,6 +16,8 @@ from flask import Blueprint, render_template, flash, redirect, url_for, request,
 from flask_nav.elements import Navbar, View
 from slackclient import SlackClient
 
+from wtforms.validators import ValidationError
+
 logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s")
 logger = logging.getLogger("frontend")
 logger.setLevel(logging.DEBUG)
@@ -23,7 +25,9 @@ logger.setLevel(logging.DEBUG)
 from .forms import *
 from .extensions import mongo, nav
 from .services.notifier import SubscriptionNotifier, ResendTokenNotifier
-from .backend import authenticate, delete_user, get_stats, get_user_subscribed_variants, remove_user_slack_data, subscribe, set_user_slack_data, set_preferences, suspend_notifications, unsubscribe
+from .backend import authenticate, delete_user, get_stats, get_user_subscribed_variants, \
+    remove_user_slack_data, subscribe, set_user_slack_data, set_preferences, \
+    suspend_notifications, unsubscribe
 from .utils import deep_get
 
 frontend = Blueprint('frontend', __name__)
@@ -257,11 +261,12 @@ def subscribe_form():
     logger.debug('Validated: %s', form.validate_on_submit())
     logger.debug('Errors: %s', form.errors)
     if form.validate_on_submit():
+        variant_string = form.variant.data
         logger.debug('Email: {}'.format(form.email.data))
-        logger.debug('Variant: {}'.format(form.chr_pos_ref_alt.data))
+        logger.debug('Variant: {}'.format(form.variant.data))
         logger.debug('Tag: {}'.format(form.tag.data))
         notifier = SubscriptionNotifier(mongo.db, current_app.config)
-        num_subscribed = subscribe(mongo.db, form.email.data, [form.chr_pos_ref_alt.data], tag=form.tag.data, notifier=notifier)
+        num_subscribed = subscribe(mongo.db, form.email.data, [form.variant.data], tag=form.tag.data, notifier=notifier)
         if num_subscribed > 0:
             flash('Subscribed to {} new variants'.format(num_subscribed), category='success')
         else:

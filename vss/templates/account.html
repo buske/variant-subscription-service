@@ -40,7 +40,7 @@
                                 <th>From <span class="glyphicon glyphicon-arrow-down" aria-hidden="true"></span></th>
                                 <th>To <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span></th>
                                 <th>Benign</th>
-                                <th>VUS</th>
+                                <th>Uncertain</th>
                                 <th>Pathogenic</th>
                             </tr>
                             <tr>
@@ -56,7 +56,7 @@
                                 <td class="table_option">{{ form.benign_to_path }}</td>
                             </tr>
                             <tr>
-                                <th colspan="2">VUS</th>
+                                <th colspan="2">Uncertain</th>
                                 <td class="table_option">{{ form.vus_to_benign }}</td>
                                 <td>{{ form.vus_to_vus(disabled=True) }}</td>
                                 <td class="table_option">{{ form.vus_to_path }}</td>

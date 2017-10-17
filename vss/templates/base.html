@@ -13,6 +13,12 @@
     {{super()}}
     <link rel="stylesheet" type="text/css"
           href="{{url_for('static', filename='vss.css')}}">
+    <style>
+        h1 {
+            text-align: center;
+            margin-bottom: 1em;
+        }
+    </style>
 {% endblock %}
 
 {% block navbar %}
@@ -20,22 +26,22 @@
 {% endblock %}
 
 {% block content -%}
-	{% block messages -%}
-	{%- with messages = get_flashed_messages(with_categories=True) %}
-	    {%- if messages %}
-	        {{utils.flashed_messages(messages)}}
-	    {%- endif %}
-	{%- endwith %}
-	{%- endblock messages %}
+    {% block messages -%}
+    {%- with messages = get_flashed_messages(with_categories=True) %}
+        {%- if messages %}
+            {{utils.flashed_messages(messages)}}
+        {%- endif %}
+    {%- endwith %}
+    {%- endblock messages %}
 
-	{% block inner_content -%}
-	{%- endblock inner_content %}
+    {% block inner_content -%}
+    {%- endblock inner_content %}
 
-	{% block footer -%}
-	<footer class="footer">
-	    <div class="container">
-	        <p class="text-muted">Made at <a href="http://2017.biohackathon.org" target="_blank">BioHackathon 2017</a> by <a href="https://twitter.com/konradjk">@konradjk</a> and <a href="https://twitter.com/orionbuske">@orionbuske</a></p>
-	    </div>
-	</footer>
-	{%- endblock footer %}
+    {% block footer -%}
+    <footer class="footer">
+        <div class="container">
+            <p class="text-muted">Made at <a href="http://2017.biohackathon.org" target="_blank">BioHackathon 2017</a> by <a href="https://twitter.com/konradjk">@konradjk</a> and <a href="https://twitter.com/orionbuske">@orionbuske</a></p>
+        </div>
+    </footer>
+    {%- endblock footer %}
 {%- endblock content %}

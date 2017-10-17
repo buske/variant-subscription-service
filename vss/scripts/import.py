@@ -3,55 +3,17 @@ import gzip
 import logging
 
 from csv import DictReader
-from pymongo import InsertOne, ReplaceOne
 from datetime import datetime
 
 from . import app, connect_db
 from ..constants import DEFAULT_GENOME_BUILD, BENIGN, UNCERTAIN, UNKNOWN, PATHOGENIC
 from ..extensions import mongo
-from ..backend import build_variant_doc, get_variant_category
+from ..backend import build_variant_doc, get_variant_category, update_variant_task, create_variant_task, run_variant_tasks
 from ..services.notifier import UpdateNotifier
 
 logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s")
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
-
-def merge_docs(old_doc, new_doc):
-    merged_clinvar = {}
-    had_clinvar_data = bool(old_doc['clinvar'])
-    if had_clinvar_data:
-        # Variant had existing clinvar, so we might notify
-        old_data = old_doc['clinvar']['current']
-        new_data = new_doc['clinvar']['current']
-        # Append to history
-        history = old_doc['clinvar']['history']
-        history.append(old_data)
-        # Set new annotation data
-        merged_clinvar['current'] = new_data
-        merged_clinvar['history'] = history
-        merged_clinvar['variation_id'] = new_doc['clinvar']['variation_id']
-    else:
-        # Add clinvar data to existing subscribed variant
-        merged_clinvar = new_doc['clinvar']
-
-    return {
-        '_id': old_doc['_id'],
-        'variant': new_doc['variant'],
-        'subscribers': old_doc['subscribers'],
-        'clinvar': merged_clinvar,
-    }
-
-
-def update_variant(db, existing_doc, updated_doc):
-    doc_id = existing_doc['_id']
-    merged_doc = merge_docs(existing_doc, updated_doc)
-    logger.debug('Updating variant: {}, {} -> {}'.format(doc_id, get_variant_category(existing_doc), get_variant_category(merged_doc)))
-    return merged_doc, ReplaceOne({ '_id': doc_id }, merged_doc)
-
-
-def create_variant(db, doc):
-    return InsertOne(doc)
 
 
 def iter_variants(filename):
@@ -81,8 +43,7 @@ def main(clinvar_filename):
     notifier = UpdateNotifier(db, app.config)
     started_at = datetime.utcnow()
 
-    db_update_queue = []
-    notification_queue = []
+    task_list = []
     variant_iterator = iter_variants(clinvar_filename)
     for i, (old_doc, new_doc) in enumerate(iter_variant_updates(db, variant_iterator)):
         if i % 10000 == 0:
@@ -92,28 +53,15 @@ def main(clinvar_filename):
             # Variant is already known, either:
             # - someone subscribed before it was added to clinvar, or
             # - it was already in clinvar, and we might have new annotations
-            updated_doc, db_update = update_variant(db, old_doc, new_doc)
-            if old_doc['subscribers']:
-                logger.info('Will notify subscribers: {}'.format(updated_doc['subscribers']))
-                notification_queue.append((old_doc, updated_doc))
+            task = update_variant_task(db, old_doc, new_doc)
 
         else:
             # Add clinvar annotations with empty subscriber data
-            db_update = create_variant(db, new_doc)
+            task = create_variant_task(db, new_doc)
 
-        db_update_queue.append(db_update)
+        task_list.append(task)
 
-    if db_update_queue:
-        logger.info('Updating {} variants'.format(len(db_update_queue)))
-        result = db.variants.bulk_write(db_update_queue, ordered=False)
-        logger.info('Inserted {} variants and updated status of {}'.format(result.inserted_count, result.modified_count))
-
-    if notification_queue:
-        for old_doc, new_doc in notification_queue:
-            notifier.notify_of_change(old_doc, new_doc)
-
-        logger.info('Notifying of changes to {} variants'.format(len(notification_queue)))
-        notifier.send_notifications()
+    run_variant_tasks(db, task_list, notifier=notifier)
 
     db.updates.insert_one({
         'started_at': started_at,

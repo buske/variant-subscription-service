@@ -3,10 +3,11 @@
 import os
 import logging
 
+from copy import deepcopy
 from datetime import datetime
 from flask import Blueprint, g
 from base64 import urlsafe_b64encode
-from pymongo import ASCENDING
+from pymongo import ASCENDING, InsertOne, ReplaceOne
 
 from .constants import DEFAULT_GENOME_BUILD, DEFAULT_NOTIFICATION_PREFERENCES, UNKNOWN
 from .extensions import mongo
@@ -130,15 +131,30 @@ def tag_variants(db, user_id, tag, variant_ids):
     return num_tagged
 
 
+def get_variant_by_clinvar_id(db, clinvar_id):
+    logger.error('Finding variant by clinvar id: {!r}'.format(clinvar_id))
+    result = db.variants.find_one({ 'clinvar.variation_id': clinvar_id })
+    logger.error('Result: {!r}'.format(result))
+    return result
+
+
 def find_or_create_variants(db, genome_build, variant_strings):
     variant_docs = []
     for variant_string in variant_strings:
-        chrom, pos, ref, alt = variant_string.split(VARIANT_PART_DELIMITER)
-        key = make_variant_key(genome_build, chrom, pos, ref, alt)
-        # TODO: normalize this here or in form validation
-        variant = db.variants.find_one({ '_id': key })
+        if variant_string.count(VARIANT_PART_DELIMITER) == 3:
+            chrom, pos, ref, alt = variant_string.split(VARIANT_PART_DELIMITER)
+            key = make_variant_key(genome_build, chrom, pos, ref, alt)
+            # TODO: normalize this here or in form validation
+            variant = db.variants.find_one({ '_id': key })
+        else:
+            clinvar_id = variant_string
+            variant = get_variant_by_clinvar_id(db, clinvar_id)
+            # Cannot subscribe to variant by clinvar id if it isn't in clinvar
+            # Should have been validated upstream
+            assert variant
+
         if variant:
-            logger.debug('Found variant: {}'.format(key))
+            logger.debug('Found variant: {}'.format(variant['_id']))
         else:
             logger.debug('Could not find variant: {}'.format(variant_string))
             # Create variant
@@ -294,3 +310,69 @@ def get_user_subscribed_variants(user):
             'total': results.count(False),
             'data': list(results),
         }
+
+
+def merge_docs(old_doc, new_doc):
+    merged_clinvar = {}
+    had_clinvar_data = bool(old_doc['clinvar'])
+    if had_clinvar_data:
+        # Variant had existing clinvar, so we might notify
+        old_data = old_doc['clinvar']['current']
+        new_data = new_doc['clinvar']['current']
+        # Append to history
+        history = old_doc['clinvar']['history']
+        history.append(old_data)
+        # Set new annotation data
+        merged_clinvar['current'] = new_data
+        merged_clinvar['history'] = history
+        merged_clinvar['variation_id'] = new_doc['clinvar']['variation_id']
+    else:
+        # Add clinvar data to existing subscribed variant
+        merged_clinvar = new_doc['clinvar']
+
+    merged_doc = deepcopy(old_doc)
+    merged_doc.update({
+        'variant': new_doc['variant'],
+        'clinvar': merged_clinvar,
+    })
+    return merged_doc
+
+
+def create_variant_task(db, doc):
+    return {
+        'old': None,
+        'new': doc,
+        'task': InsertOne(doc)
+    }
+
+
+def update_variant_task(db, existing_doc, updated_doc):
+    doc_id = existing_doc['_id']
+    merged_doc = merge_docs(existing_doc, updated_doc)
+    logger.debug('Updating variant: {}, {} -> {}'.format(doc_id, get_variant_category(existing_doc), get_variant_category(merged_doc)))
+
+    if existing_doc['subscribers']:
+        logger.info('Will notify subscribers: {}'.format(updated_doc['subscribers']))
+
+    return {
+        'old': existing_doc,
+        'new': merged_doc,
+        'task': ReplaceOne({ '_id': doc_id }, merged_doc)
+    }
+
+
+def run_variant_tasks(db, tasks, notifier=None):
+    db_update_queue = [task['task'] for task in tasks]
+
+    if db_update_queue:
+        logger.info('Updating {} variants'.format(len(db_update_queue)))
+        result = db.variants.bulk_write(db_update_queue, ordered=False)
+        logger.info('Inserted {} variants and updated status of {}'.format(result.inserted_count, result.modified_count))
+
+    if notifier:
+        notification_queue = [(task['old'], task['new']) for task in tasks if task['old']]
+        for old_doc, new_doc in notification_queue:
+            notifier.notify_of_change(old_doc, new_doc)
+
+        logger.info('Notifying of changes to {} variants'.format(len(notification_queue)))
+        notifier.send_notifications()
