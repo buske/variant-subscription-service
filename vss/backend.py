@@ -363,11 +363,18 @@ def update_variant_task(db, existing_doc, updated_doc):
 
 def run_variant_tasks(db, tasks, notifier=None):
     db_update_queue = [task['task'] for task in tasks]
+    counts = {
+        'inserted': 0,
+        'modified': 0,
+        'notified': 0,
+    }
 
     if db_update_queue:
         logger.info('Updating {} variants'.format(len(db_update_queue)))
         result = db.variants.bulk_write(db_update_queue, ordered=False)
         logger.info('Inserted {} variants and updated status of {}'.format(result.inserted_count, result.modified_count))
+        counts['inserted'] = result.inserted_count
+        counts['modified'] = result.modified_count
 
     if notifier:
         notification_queue = [(task['old'], task['new']) for task in tasks if task['old']]
@@ -376,3 +383,6 @@ def run_variant_tasks(db, tasks, notifier=None):
 
         logger.info('Notifying of changes to {} variants'.format(len(notification_queue)))
         notifier.send_notifications()
+        counts['notified'] = len(notification_queue)
+
+    return counts

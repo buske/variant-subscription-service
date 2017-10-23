@@ -61,14 +61,14 @@ def main(clinvar_filename):
 
         task_list.append(task)
 
-    run_variant_tasks(db, task_list, notifier=notifier)
+    results = run_variant_tasks(db, task_list, notifier=notifier)
 
     db.updates.insert_one({
         'started_at': started_at,
         'finished_at': datetime.utcnow(),
-        'inserted_count': result.inserted_count,
-        'modified_count': result.modified_count,
-        'notified_count': len(notification_queue),
+        'inserted_count': results['inserted'],
+        'modified_count': results['modified'],
+        'notified_count': results['notified'],
     })
 
 
