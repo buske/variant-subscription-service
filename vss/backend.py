@@ -7,7 +7,7 @@ from copy import deepcopy
 from datetime import datetime
 from flask import Blueprint, g
 from base64 import urlsafe_b64encode
-from pymongo import ASCENDING, InsertOne, ReplaceOne
+from pymongo import ASCENDING, DESCENDING, InsertOne, ReplaceOne
 
 from .constants import DEFAULT_GENOME_BUILD, DEFAULT_NOTIFICATION_PREFERENCES, UNKNOWN
 from .extensions import mongo
@@ -225,7 +225,7 @@ def get_stats():
     db = mongo.db
     # Get number of variants with subscribers
     subscribed_variants = db.variants.count({ 'subscribers': { '$exists': True, '$ne': [] } })
-    last_updated_doc = db.updates.find_one({}, sort=[('finished_at', ASCENDING)])
+    last_updated_doc = db.updates.find_one({}, sort=[('finished_at', DESCENDING)])
     last_updated = last_updated_doc.get('finished_at') if last_updated_doc else None
     return {
         'subscribed_variants': subscribed_variants,

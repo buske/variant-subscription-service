@@ -62,6 +62,7 @@ def main(clinvar_filename):
         task_list.append(task)
 
     results = run_variant_tasks(db, task_list, notifier=notifier)
+    logger.debug('Variants updated. Results: {}'.format(results))
 
     db.updates.insert_one({
         'started_at': started_at,
