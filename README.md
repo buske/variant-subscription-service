@@ -1,3 +1,6 @@
+> [!NOTE]
+> This project is no longer being actively developed or maintained.
+
 # Variant Subscription Service (VSS)
 
 Subscribe to important updates on genomic variants of interest, such as changes in ClinVar classification
